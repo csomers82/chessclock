@@ -36,8 +36,9 @@
 #include "stm32f0xx_it.h"
 
 /* USER CODE BEGIN 0 */
-extern uint8_t tenths;
-extern uint8_t tenths_flag;
+extern int      tenths;
+extern int      toggle_player;
+extern int      active_player;
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -153,8 +154,7 @@ void TIM6_IRQHandler(void)
   /* USER CODE END TIM6_IRQn 0 */
   HAL_TIM_IRQHandler(&htim6);
   /* USER CODE BEGIN TIM6_IRQn 1 */
-  tenths 		+= 1;
-  tenths_flag    = 1;
+  tenths += 1;
   /* USER CODE END TIM6_IRQn 1 */
 }
 

@@ -66,12 +66,11 @@ void SystemClock_Config(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-volatile uint8_t  tenths          = 0;
-volatile uint8_t  tenths_flag     = 0;
+int               tenths          = 0;
 int               game_active     = 1;
 int               active_player   = 0;
 int               toggle_player   = 0;
-int 			  timing_modern   = 1;
+int               timing_modern   = 1;
 uint8_t           timing_add      = 30U;
 int               line            = LINE1;
 
@@ -150,10 +149,10 @@ int main(void)
 
         /* USER CODE BEGIN 3 */
         // handle the passing of time
-        if (tenths_flag && (tenths % 10 == 0)) {
+        if (tenths == 10) {
           timestr_sub(10U);
           app_timestr_print(line);
-          tenths_flag = 0;
+          tenths = 0;
         }
 
         // handle the toggle of players
