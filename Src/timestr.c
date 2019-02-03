@@ -23,8 +23,10 @@
 
 uint8_t   timestrbank[TIMESTR_DIGS * TIMESTR_CHANS] = {0};
 uint8_t * timestr;
-uint8_t   timezeroflags[TIMESTR_CHANS];
+uint8_t   timezeroflags[TIMESTR_CHANS] = {0};
 uint8_t * timezf;
+uint8_t   timefullflags[TIMESTR_CHANS] = {0};
+uint8_t * timeff;
 
 /*--------------------------------------------------------------------------*\
  | timestr_setch: 
@@ -34,6 +36,7 @@ uint8_t * timezf;
 void timestr_setch(uint8_t chidx) {
   timestr = &timestrbank[TIMESTR_DIGS * chidx];
   timezf  = &timezeroflags[chidx];
+  timeff  = &timefullflags[chidx];
 }
 
 /*--------------------------------------------------------------------------*\
@@ -42,6 +45,13 @@ void timestr_setch(uint8_t chidx) {
  |    Assumption is that x is less than 100 
 \*--------------------------------------------------------------------------*/
 void timestr_add(uint8_t carry) {
+  // qualify the addition
+  if (*timeff) 
+    return;
+
+  // carry will always be nonzero
+  *timezf = 0;
+
   // tents
   timestr[0] += carry;
   carry       = 0;
@@ -75,8 +85,14 @@ void timestr_add(uint8_t carry) {
   timestr[4] += carry;
   if (timestr[4] <= ASCII_9) 
     return;
-  timestr[4]  -= 10;
 
+  // cannot add any more!
+  *timeff    = 1;
+  timestr[0] = ASCII_9;
+  timestr[1] = ASCII_9;
+  timestr[2] = ASCII_5;
+  timestr[3] = ASCII_9;
+  timestr[4] = ASCII_9;
   return;
 }
 
@@ -86,6 +102,13 @@ void timestr_add(uint8_t carry) {
  |    Assumption is that x is less than 48 
 \*--------------------------------------------------------------------------*/
 void timestr_sub(uint8_t borrow) {
+  // qualify the subtraction
+  if (*timezf) 
+    return;
+
+  // borrow will always be nonzero
+  *timeff = 0;
+
   // tents
   timestr[0] -= borrow;
   borrow      = 0;
@@ -120,12 +143,13 @@ void timestr_sub(uint8_t borrow) {
   if (timestr[4] >= ASCII_0)
     return;
 
+  // cannot subtract any more!
   *timezf    = 1;
-  timestr[0] = 0;
-  timestr[1] = 0;
-  timestr[2] = 0;
-  timestr[3] = 0;
-  timestr[4] = 0;
+  timestr[0] = ASCII_0;
+  timestr[1] = ASCII_0;
+  timestr[2] = ASCII_0;
+  timestr[3] = ASCII_0;
+  timestr[4] = ASCII_0;
   return;
 }
 

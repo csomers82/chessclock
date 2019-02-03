@@ -46,6 +46,7 @@
 #include "gpio.h"
 
 /* USER CODE BEGIN Includes */
+//#include "stm32f0xx_hal_pwr.h"
 #include "JHD162A.h"
 /* USER CODE END Includes */
 
@@ -65,8 +66,15 @@ void SystemClock_Config(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-volatile uint8_t tenths = 0;
-volatile uint8_t tenths_flag = 0;
+volatile uint8_t  tenths          = 0;
+volatile uint8_t  tenths_flag     = 0;
+int               game_active     = 1;
+int               active_player   = 0;
+int               toggle_player   = 0;
+int 			  timing_modern   = 1;
+uint8_t           timing_add      = 30U;
+int               line            = LINE1;
+
 /* USER CODE END 0 */
 
 /**
@@ -116,12 +124,12 @@ int main(void)
 
   // initialize player one's clock
   timestr_setch(0);
-  app_timestr_init(10010);
+  app_timestr_init(1010);
   app_timestr_print(LINE1);
 
   // initialize player two's clock
   timestr_setch(1);
-  app_timestr_init(31010);
+  app_timestr_init(11010);
   app_timestr_print(LINE2);
   
   // ready for game to begin
@@ -132,20 +140,37 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   // ------------------------------------------------
-  while (1)
-  {
+  while (1) {
+        
+        /* USER CODE END WHILE */
+    if (timing_modern) {
+      while (game_active)
+      {
 
-    /* USER CODE END WHILE */
 
-    /* USER CODE BEGIN 3 */
-    if(tenths_flag && tenths % 10 == 0) {
-      //HAL_Delay(100);
-      tenths_flag = 0;
-      timestr_sub(10U);
-      app_timestr_print(LINE1);
+        /* USER CODE BEGIN 3 */
+        // handle the passing of time
+        if (tenths_flag && (tenths % 10 == 0)) {
+          timestr_sub(10U);
+          app_timestr_print(line);
+          tenths_flag = 0;
+        }
+
+        // handle the toggle of players
+        if (toggle_player) {
+          timestr_add(timing_add);
+          app_timestr_print(line);
+          active_player = 1 - active_player;
+          timestr_setch(active_player);
+          line = (line == LINE1) ? LINE2 : LINE1;
+          toggle_player = 0;
+        }
+        HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFE);
+      }// while (game_active), modern timing        
     }
-
-
+    while (!game_active) {
+      HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFE);
+    }
   }
   /* USER CODE END 3 */
 
