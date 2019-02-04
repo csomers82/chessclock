@@ -73,6 +73,8 @@ int               toggle_player   = 0;
 int               timing_modern   = 1;
 uint8_t           timing_add      = 30U;
 int               line            = LINE1;
+int               debounce[2]     = {0};
+int               toggle_check[2] = {0};
 
 /* USER CODE END 0 */
 
@@ -146,13 +148,20 @@ int main(void)
       while (game_active)
       {
 
-
         /* USER CODE BEGIN 3 */
         // handle the passing of time
         if (tenths == 10) {
           timestr_sub(10U);
           app_timestr_print(line);
           tenths = 0;
+        }
+
+        // toggle check 
+        if (toggle_check[0]) {
+          app_debounce(0);
+        }
+        else if (toggle_check[1]) {
+          app_debounce(1);
         }
 
         // handle the toggle of players

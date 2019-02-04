@@ -37,8 +37,8 @@
 
 /* USER CODE BEGIN 0 */
 extern int      tenths;
-extern int      toggle_player;
-extern int      active_player;
+extern int      toggle_check[2];
+extern int      debounce[2];
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -133,6 +133,14 @@ void SysTick_Handler(void)
 void EXTI4_15_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI4_15_IRQn 0 */
+  if (HAL_GPIO_ReadPin(TGLA_GPIO_Port, TGLA_Pin)) {
+    debounce[0]     = 1;
+    toggle_check[0] = 1;
+  }
+  else if (HAL_GPIO_ReadPin(TGLB_GPIO_Port, TGLB_Pin)) {
+    debounce[1]     = 1;
+    toggle_check[1] = 1;
+  }
 
   /* USER CODE END EXTI4_15_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_7);
