@@ -30,12 +30,14 @@ uint8_t           timing_add      = 30U;
 int               line            = LINE1;
 int               debounce[2]     = {0};
 int               toggle_check[2] = {0};
+int               bell_count      = 0;
 
 /*--------------------------------------------------------------------------*\
  | External Variable Definitions
 \*--------------------------------------------------------------------------*/
 
 extern uint8_t *  timestr;          // for timestr functions
+extern uint8_t *  timezf;           // for timestr functions
 extern char       itoaBuffer[6];    // for func: itoa_intobuffer
 
 extern TIM_HandleTypeDef htim1;
@@ -75,6 +77,18 @@ void app_timestr_init(int32_t t0) {
 }
 
 /*--------------------------------------------------------------------------*\
+ | app_bell
+ |    make sound with the pwm at buzzer
+\*--------------------------------------------------------------------------*/
+void app_bell(int dur) {
+  //turn on the buzzer
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+  //hold for 'dur' tenths of a sec
+  bell_count = dur;
+  return;
+}
+
+/*--------------------------------------------------------------------------*\
  | app_debounce 
  |    handle button states following ISR
 \*--------------------------------------------------------------------------*/
@@ -110,20 +124,25 @@ void app_debounce(uint8_t p) {
  | main: 
 \*==========================================================================*/
 void app_main() {
-  // beep test
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
-  //
+  app_bell(20);
   while(1) {
     if (timing_modern) {
       while (game_active)
       {
+        HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFE);
 
-        /* USER CODE BEGIN 3 */
         // handle the passing of time
         if (tenths == 10) {
           timestr_sub(10U);
           app_timestr_print(line);
           tenths = 0;
+        }
+
+        // update the buzzer
+        if (bell_count) {
+          if (--bell_count == 0) {
+            HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_2);
+          } 
         }
 
         // toggle check 
@@ -142,10 +161,24 @@ void app_main() {
           timestr_setch(active_player);
           line = (line == LINE1) ? LINE2 : LINE1;
           toggle_player = 0;
+          app_bell(20);
         }
-        HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFE);
+
+        // check gameover
+        if (timezf[active_player]) {
+          app_bell(60);
+          game_active = 0;
+        } 
       }// while (game_active), modern timing        
     }
+    // wait for alarm off
+    while(bell_count) {
+      --bell_count;
+      HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFE);
+    }
+    HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_2);
+
+    // wait for new game
     while (!game_active) {
       HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFE);
     }

@@ -36,7 +36,7 @@
 #include "stm32f0xx_it.h"
 
 /* USER CODE BEGIN 0 */
-// from main.c
+// from application.c
 extern int      tenths;
 extern int      toggle_check[2];
 extern int      debounce[2];

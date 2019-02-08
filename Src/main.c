@@ -115,12 +115,12 @@ int main(void)
 
   // initialize player one's clock
   timestr_setch(0);
-  app_timestr_init(1010);
+  app_timestr_init(140);
   app_timestr_print(LINE1);
 
   // initialize player two's clock
   timestr_setch(1);
-  app_timestr_init(11010);
+  app_timestr_init(110);
   app_timestr_print(LINE2);
   
   // ready for game to begin
