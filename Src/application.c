@@ -10,12 +10,26 @@
 //==============================================================================
 
 #include "main.h"
+#include "stm32f0xx_hal.h"
+#include <inttypes.h>
+
 #include "basic.h"
 #include "timestr.h"
 #include "application.h"
-#include "stm32f0xx_hal.h"
-#include <inttypes.h>
 #include "JHD162A.h"
+
+/*==========================================================================*\
+ | MAIN MCU RAM  
+\*==========================================================================*/
+int               tenths          = 0;
+int               game_active     = 1;
+int               active_player   = 0;
+int               toggle_player   = 0;
+int               timing_modern   = 1;
+uint8_t           timing_add      = 30U;
+int               line            = LINE1;
+int               debounce[2]     = {0};
+int               toggle_check[2] = {0};
 
 /*--------------------------------------------------------------------------*\
  | External Variable Definitions
@@ -23,10 +37,12 @@
 
 extern uint8_t *  timestr;          // for timestr functions
 extern char       itoaBuffer[6];    // for func: itoa_intobuffer
-extern int        toggle_player;
-extern int        active_player;
-extern int        debounce[2];    
-extern int        toggle_check[2];
+
+extern TIM_HandleTypeDef htim1;
+
+/*==========================================================================*\
+ | ASSISTANT FUNCTIONS 
+\*==========================================================================*/
 
 /*--------------------------------------------------------------------------*\
  | app_timestr_print
@@ -63,7 +79,7 @@ void app_timestr_init(int32_t t0) {
  |    handle button states following ISR
 \*--------------------------------------------------------------------------*/
 void app_debounce(uint8_t p) {
-  int Port, Pin;
+  int *Port, Pin;
   Port = (p == 0) ? TGLA_GPIO_Port  : TGLB_GPIO_Port;
   Pin  = (p == 0) ? TGLA_Pin        : TGLB_Pin;
 
@@ -90,4 +106,51 @@ void app_debounce(uint8_t p) {
 }
 
 
+/*==========================================================================*\
+ | main: 
+\*==========================================================================*/
+void app_main() {
+  // beep test
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+  //
+  while(1) {
+    if (timing_modern) {
+      while (game_active)
+      {
 
+        /* USER CODE BEGIN 3 */
+        // handle the passing of time
+        if (tenths == 10) {
+          timestr_sub(10U);
+          app_timestr_print(line);
+          tenths = 0;
+        }
+
+        // toggle check 
+        if (toggle_check[0]) {
+          app_debounce(0);
+        }
+        else if (toggle_check[1]) {
+          app_debounce(1);
+        }
+
+        // handle the toggle of players
+        if (toggle_player) {
+          timestr_add(timing_add);
+          app_timestr_print(line);
+          active_player = 1 - active_player;
+          timestr_setch(active_player);
+          line = (line == LINE1) ? LINE2 : LINE1;
+          toggle_player = 0;
+        }
+        HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFE);
+      }// while (game_active), modern timing        
+    }
+    while (!game_active) {
+      HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFE);
+    }
+    
+  }
+  // never return, else error
+  return;
+}

@@ -51,8 +51,11 @@
 #define GLCD_PER 1000
 #define GLCD_PRE 20
 #define GLCD_DUTY 500
-#define DB_PRE 200 
+#define DB_PRE 200
 #define DB_PER 10000
+#define BUZZ_PRE (64)
+#define BUZZ_PER (532)
+#define BUZZ_PUL (BUZZ_PER/2)
 
 #define E_Pin GPIO_PIN_0
 #define E_GPIO_Port GPIOA

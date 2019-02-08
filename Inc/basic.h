@@ -30,10 +30,13 @@
 
 // basic debug lcd function
 void shiftout(unsigned char x);
-//void lcdwait();
 void spinwaiting(char loops);
 void itoa_intoBuffer(int32_t in);
 void blink(uint16_t t);
 void wink(uint16_t t);
+
+// slightly better than basic switches
+#define __USE_SPI1_ISR
+
 
 #endif//__BASIC_H

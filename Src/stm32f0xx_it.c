@@ -36,12 +36,16 @@
 #include "stm32f0xx_it.h"
 
 /* USER CODE BEGIN 0 */
+// from main.c
 extern int      tenths;
 extern int      toggle_check[2];
 extern int      debounce[2];
+// from basic.c
+extern int      spi_busy;
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
+extern SPI_HandleTypeDef hspi1;
 extern TIM_HandleTypeDef htim6;
 
 /******************************************************************************/
@@ -164,6 +168,21 @@ void TIM6_IRQHandler(void)
   /* USER CODE BEGIN TIM6_IRQn 1 */
   tenths += 1;
   /* USER CODE END TIM6_IRQn 1 */
+}
+
+/**
+* @brief This function handles SPI1 global interrupt.
+*/
+void SPI1_IRQHandler(void)
+{
+  /* USER CODE BEGIN SPI1_IRQn 0 */
+  spi_busy = 0;
+
+  /* USER CODE END SPI1_IRQn 0 */
+  HAL_SPI_IRQHandler(&hspi1);
+  /* USER CODE BEGIN SPI1_IRQn 1 */
+
+  /* USER CODE END SPI1_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */

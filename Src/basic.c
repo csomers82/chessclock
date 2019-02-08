@@ -1,10 +1,12 @@
 #include "main.h"
 #include "stm32f0xx_hal.h"
+#include "stm32f0xx_hal_spi.h"
 #include "basic.h"
 
 extern SPI_HandleTypeDef hspi1;
 
 char itoaBuffer[6] = {0};// for func: itoa_intobuffer
+int   spi_busy = 1;
 
 
 /*
@@ -41,15 +43,16 @@ void spinwaiting(char loops) {
 
 /*
 ***********************************************************************
-  shiftout: Transmits the character x to external shift
-            register using the SPI.  It should shift LSB first.
-
-            MISO = PA7
-            SCK  = PA5
-            RCLK = shift registers update-input input signal
+|  shiftout: Transmits the character x to external shift
+|            register using the SPI.  It should shift LSB first.
+|
+|            MISO = PA7
+|            SCK  = PA5
+|            RCLK = shift registers update-input input signal
 ***********************************************************************
 */
 void shiftout(unsigned char x) {
+#ifndef __USE_SPI1_ISR
     HAL_GPIO_WritePin(STC_595_GPIO_Port, STC_595_Pin, GPIO_PIN_RESET);
     // read something to see if transmit data register is empty
     HAL_SPI_Transmit(&hspi1, &x, 1, 200); // write 1 character
@@ -59,6 +62,18 @@ void shiftout(unsigned char x) {
     HAL_GPIO_WritePin(STC_595_GPIO_Port, STC_595_Pin, GPIO_PIN_SET);
     spinwaiting(3);
     HAL_GPIO_WritePin(STC_595_GPIO_Port, STC_595_Pin, GPIO_PIN_RESET);
+#else
+    HAL_GPIO_WritePin(STC_595_GPIO_Port, STC_595_Pin, GPIO_PIN_RESET);
+    spi_busy = 1;
+    HAL_SPI_Transmit_IT(&hspi1, &x, 1); // write 1 character
+    // sleep processor until transmitted
+    do {
+        HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFE);
+    } while(spi_busy);
+    HAL_GPIO_WritePin(STC_595_GPIO_Port, STC_595_Pin, GPIO_PIN_SET);
+    spinwaiting(3);
+    HAL_GPIO_WritePin(STC_595_GPIO_Port, STC_595_Pin, GPIO_PIN_RESET);
+#endif
 }
 
 
