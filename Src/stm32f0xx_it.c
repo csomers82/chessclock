@@ -36,17 +36,21 @@
 #include "stm32f0xx_it.h"
 
 /* USER CODE BEGIN 0 */
+#include "JHD162A.h"
+
 // from application.c
 extern int      tenths;
+extern int      tenth_flag;
 extern int      toggle_check[2];
 extern int      debounce[2];
-extern int		bell_count;
+extern int		  bell_count;
 // from basic.c
 extern int      spi_busy;
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
 extern SPI_HandleTypeDef hspi1;
+extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim6;
 
 /******************************************************************************/
@@ -72,12 +76,17 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
+  HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_2);
+  //send_i(LCDCLR);
+  //lcdprint("HARD FAULT");
 
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
   {
     /* USER CODE BEGIN W1_HardFault_IRQn 0 */
-    /* USER CODE END W1_HardFault_IRQn 0 */
+	HAL_GPIO_WritePin(BONUS_GPIO_Port, BONUS_Pin, GPIO_PIN_SET);
+	HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFE);
+	/* USER CODE END W1_HardFault_IRQn 0 */
   }
   /* USER CODE BEGIN HardFault_IRQn 1 */
 
@@ -167,6 +176,7 @@ void TIM6_IRQHandler(void)
   /* USER CODE END TIM6_IRQn 0 */
   HAL_TIM_IRQHandler(&htim6);
   /* USER CODE BEGIN TIM6_IRQn 1 */
+  tenth_flag  = 1;
   tenths     += 1;
   bell_count  = (bell_count) ? --bell_count : 0;
   /* USER CODE END TIM6_IRQn 1 */

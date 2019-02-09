@@ -104,11 +104,13 @@ void itoa_intoBuffer(int32_t in) {
         itoaBuffer[4-i] = c;
         cbuf = cbuf / 10;
     }
+    #ifdef __ITOA_BLANKOUT
     for(i = 0; i < 4; ++i) {
         if(itoaBuffer[i] != '0')
             break;
         itoaBuffer[i] = ' ';
     }
+    #endif
     if(in < 0) {
         if(i > 0) itoaBuffer[i-1] = '-';
     }

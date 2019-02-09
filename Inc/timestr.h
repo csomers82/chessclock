@@ -24,6 +24,15 @@
 #define TIMESTR_CHANS (2)
 
 /*--------------------------------------------------------------------------*\
+ | timestr_ttoi: 
+ |    takes a human readable set of clock numbers 
+ |    returns what those clock digits are as a total of seconds
+ |    (assumption is that clockdisp has 5 digits
+ |        (including tenth seconds))
+\*--------------------------------------------------------------------------*/
+int timestr_ttoi(int clockdisp);
+
+/*--------------------------------------------------------------------------*\
  | timestr_setch: 
  |    Sets the timestr pointer to the indicated index 
  |    Channel numbers range from 0:TIMESTR_CHANS-1

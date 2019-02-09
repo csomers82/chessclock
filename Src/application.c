@@ -35,11 +35,13 @@ struct BellCode bell_program3[9];
 /*==========================================================================*\
  | MAIN MCU RAM  
 \*==========================================================================*/
+int                 tenth_flag      = 0;
 int                 tenths          = 0;
 int                 game_active     = 1;
 int                 game_result     = 0;
 int                 active_player   = 0;
 int                 toggle_player   = 0;
+int                 count_player[2] = {0};
 int                 timing_modern   = 1;
 uint8_t             timing_add      = 30U;
 int                 line            = LINE1;
@@ -62,13 +64,29 @@ uint32_t            bellCH          = TIM_CHANNEL_2;
 \*--------------------------------------------------------------------------*/
 void app_timestr_print(char line) {
   chgline(line);   
-  print_c(timestr[4]);
-  print_c(timestr[3]);
-  print_c(':');
-  print_c(timestr[2]);
-  print_c(timestr[1]);
-  print_c('.');
-  print_c(timestr[0]);
+  if(count_player[active_player] >= 6000) {
+    print_c(timestr[4]);
+    print_c(timestr[3]);
+    print_c(':');
+    print_c(timestr[2]);
+    print_c(timestr[1]);
+  }
+  else if(count_player[active_player] > THRESH_TENTHS) {
+    print_c(' ');
+    print_c(timestr[3]);
+    print_c(':');
+    print_c(timestr[2]);
+    print_c(timestr[1]);
+  }
+  else {
+    print_c(' ');
+    print_c(timestr[3]);
+    print_c(':');
+    print_c(timestr[2]);
+    print_c(timestr[1]);
+    print_c('.');
+    print_c(timestr[0]);
+  }
   return;
 }
 
@@ -78,6 +96,7 @@ void app_timestr_print(char line) {
 \*--------------------------------------------------------------------------*/
 void app_timestr_init(int32_t t0) {
   itoa_intoBuffer(t0);
+  count_player[active_player] = timestr_ttoi(t0);
   timestr[0] = itoaBuffer[4];
   timestr[1] = itoaBuffer[3];
   timestr[2] = itoaBuffer[2];
@@ -154,7 +173,7 @@ void app_debounce(uint8_t p) {
     debounce[p]     = 0;
   }
   // success exit
-  if(debounce[p] == DEBOUNCE_THRESH) {
+  if(debounce[p] == THRESH_DEBOUNCE) {
     toggle_check[p] = 0;
     debounce[p]     = 0;
     toggle_player = 1;

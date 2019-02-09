@@ -37,6 +37,7 @@ void wink(uint16_t t);
 
 // slightly better than basic switches
 #define __USE_SPI1_ISR
+//#define __ITOA_BLANKOUT
 
 
 #endif//__BASIC_H

@@ -29,6 +29,25 @@ uint8_t   timefullflags[TIMESTR_CHANS] = {0};
 uint8_t * timeff;
 
 /*--------------------------------------------------------------------------*\
+ | timestr_ttoi: 
+ |    takes a human readable set of clock numbers 
+ |    returns what those clock digits are as a total of tenth seconds
+ |    (assumption is that clockdisp has 5 digits
+ |        (including tenth seconds))
+\*--------------------------------------------------------------------------*/
+int timestr_ttoi(int clockdisp) {
+  int total = 0;
+  //no base change up till minutes, add straigth
+  total += (clockdisp % 1000);
+  clockdisp /= 1000;
+
+  //with minutes, convert base to decimal
+  total += (clockdisp * 600);
+
+  return(total);
+}
+
+/*--------------------------------------------------------------------------*\
  | timestr_setch: 
  |    Sets the timestr pointer to the indicated index 
  |    Channel numbers range from 0:TIMESTR_CHANS-1

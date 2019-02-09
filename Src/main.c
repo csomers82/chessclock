@@ -44,10 +44,7 @@
 #include "gpio.h"
 
 /* USER CODE BEGIN Includes */
-//#include "stm32f0xx_hal_pwr.h"
-#include "application.h"
 #include "chessclock.h"
-#include "timestr.h"
 #include "JHD162A.h"
 /* USER CODE END Includes */
 
@@ -114,18 +111,6 @@ int main(void)
   lcdinit();
   HAL_Delay(900);
 
-  // initialize player one's clock
-  timestr_setch(0);
-  app_timestr_init(40);
-  app_timestr_print(LINE1);
-
-  // initialize player two's clock
-  timestr_setch(1);
-  app_timestr_init(110);
-  app_timestr_print(LINE2);
-  
-  // ready for game to begin
-  timestr_setch(0);
   HAL_TIM_Base_Start_IT(&htim6);
   /* USER CODE END 2 */
 

@@ -36,12 +36,15 @@ enum Bell_Progs {
 //==============================================================================
 //  Constants
 //==============================================================================
-#define DEBOUNCE_THRESH (5)
+#define THRESH_DEBOUNCE     (5)
+#define THRESH_TENTHS       (210)
 
 // bell handler "opcodes"
 #define BELL_PLAY (2)
 #define BELL_REST (1)
 #define BELL_HALT (0)
+
+#define app_mcu_sleep()     (HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFE))
 
 //==============================================================================
 //  Functions
