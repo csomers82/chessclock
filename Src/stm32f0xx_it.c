@@ -40,6 +40,7 @@
 extern int      tenths;
 extern int      toggle_check[2];
 extern int      debounce[2];
+extern int		bell_count;
 // from basic.c
 extern int      spi_busy;
 /* USER CODE END 0 */
@@ -166,7 +167,8 @@ void TIM6_IRQHandler(void)
   /* USER CODE END TIM6_IRQn 0 */
   HAL_TIM_IRQHandler(&htim6);
   /* USER CODE BEGIN TIM6_IRQn 1 */
-  tenths += 1;
+  tenths     += 1;
+  bell_count  = (bell_count) ? --bell_count : 0;
   /* USER CODE END TIM6_IRQn 1 */
 }
 

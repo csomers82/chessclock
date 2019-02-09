@@ -23,6 +23,7 @@
 \*==========================================================================*/
 int               tenths          = 0;
 int               game_active     = 1;
+int               game_result     = 0;
 int               active_player   = 0;
 int               toggle_player   = 0;
 int               timing_modern   = 1;
@@ -119,61 +120,123 @@ void app_debounce(uint8_t p) {
   return;
 }
 
+/*==========================================================================*\
+ | game types: 
+\*==========================================================================*/
+/*--------------------------------------------------------------------------*\
+ | app_game_traditional 
+ |    time never increases, linear burndown
+\*--------------------------------------------------------------------------*/
+void app_game_traditional() {
+  while (game_active)
+  {
+    // spend less time w/ proc active
+    HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFE);
+
+    // handle the passing of time
+    if (tenths == 10) {
+      tenths = 0;
+      timestr_sub(10U);
+      app_timestr_print(line);
+    }
+
+    // update the buzzer
+    if (!bell_count) {
+      HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_2);
+    }
+
+    // toggle check 
+    if (toggle_check[0]) {
+      app_debounce(0);
+    }
+    else if (toggle_check[1]) {
+      app_debounce(1);
+    }
+
+    // handle the toggle of players
+    if (toggle_player) {
+      toggle_player = 0;
+      app_timestr_print(line);
+      active_player = 1 - active_player;
+      timestr_setch(active_player);
+      line = (line == LINE1) ? LINE2 : LINE1;
+      app_bell(20);
+    }
+
+    // check gameover
+    if (timezf[active_player]) {
+      app_bell(60);
+      game_active = 0;
+    } 
+  }// while (game_active), modern timing        
+  return(0);
+}
+/*--------------------------------------------------------------------------*\
+ | app_game_modern 
+ |    time control is incremental 
+\*--------------------------------------------------------------------------*/
+void app_game_modern() {
+  while (game_active)
+  {
+    // spend less time w/ proc active
+    HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFE);
+
+    // handle the passing of time
+    if (tenths == 10) {
+      tenths = 0;
+      timestr_sub(10U);
+      app_timestr_print(line);
+    }
+
+    // update the buzzer
+    if (!bell_count) {
+      HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_2);
+    }
+
+    // toggle check 
+    if (toggle_check[0]) {
+      app_debounce(0);
+    }
+    else if (toggle_check[1]) {
+      app_debounce(1);
+    }
+
+    // handle the toggle of players
+    if (toggle_player) {
+      timestr_add(timing_add);
+      app_timestr_print(line);
+      active_player = 1 - active_player;
+      timestr_setch(active_player);
+      line = (line == LINE1) ? LINE2 : LINE1;
+      toggle_player = 0;
+      app_bell(20);
+    }
+
+    // check gameover
+    if (timezf[active_player]) {
+      app_bell(60);
+      game_active = 0;
+      game_result = GAMEOVER_TEXP + active_player;
+    } 
+  }// while (game_active), modern timing        
+  return(0);
+}
 
 /*==========================================================================*\
  | main: 
 \*==========================================================================*/
 void app_main() {
-  app_bell(20);
+  app_bell(10);
   while(1) {
     if (timing_modern) {
-      while (game_active)
-      {
-        HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFE);
-
-        // handle the passing of time
-        if (tenths == 10) {
-          timestr_sub(10U);
-          app_timestr_print(line);
-          tenths = 0;
-        }
-
-        // update the buzzer
-        if (bell_count) {
-          if (--bell_count == 0) {
-            HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_2);
-          } 
-        }
-
-        // toggle check 
-        if (toggle_check[0]) {
-          app_debounce(0);
-        }
-        else if (toggle_check[1]) {
-          app_debounce(1);
-        }
-
-        // handle the toggle of players
-        if (toggle_player) {
-          timestr_add(timing_add);
-          app_timestr_print(line);
-          active_player = 1 - active_player;
-          timestr_setch(active_player);
-          line = (line == LINE1) ? LINE2 : LINE1;
-          toggle_player = 0;
-          app_bell(20);
-        }
-
-        // check gameover
-        if (timezf[active_player]) {
-          app_bell(60);
-          game_active = 0;
-        } 
-      }// while (game_active), modern timing        
+      app_game_modern();
     }
+    else {
+      app_game_traditional();
+    }
+
     // wait for alarm off
     while(bell_count) {
-      --bell_count;
       HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFE);
     }
     HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_2);

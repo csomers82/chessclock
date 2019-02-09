@@ -21,7 +21,11 @@
 //==============================================================================
 //  Constants
 //==============================================================================
-#define DEBOUNCE_THRESH (5)
+#define DEBOUNCE_THRESH      (5)
+
+#define GAMEOVER_TEXP (0)
+#define GAMEOVER_CHKM (2)
+#define GAMEOVER_QUIT (4)
 
 //==============================================================================
 //  Functions
@@ -44,5 +48,39 @@ void app_timestr_init(int32_t t0);
  |    handle button states following ISR
 \*--------------------------------------------------------------------------*/
 void app_debounce(uint8_t p);
+
+/*--------------------------------------------------------------------------*\
+ | app_game_modern 
+ |    time control is incremental 
+ |    
+ |    time update
+ |    bell update
+ |    toggling debounce
+ |    toggle handling (w/ addition)
+ |    gamestate update
+\*--------------------------------------------------------------------------*/
+void app_game_modern(void);
+
+/*--------------------------------------------------------------------------*\
+ | app_game_traditional 
+ |    time never increases, linear burndown
+ |    
+ |    time update
+ |    bell update
+ |    toggling debounce
+ |    toggle handling (w/o addition)
+ |    gamestate update
+\*--------------------------------------------------------------------------*/
+void app_game_traditional(void);
+
+/*--------------------------------------------------------------------------*\
+ | app_main
+ |    a sub-main to subvert sloppy stmcubemx functionallity 
+ |
+ |    menu_subroutine, 
+ |    game_subroutine, 
+ |    end_of_game handling
+\*--------------------------------------------------------------------------*/
+void app_main(void);
 
 #endif//__APPLICATION_
