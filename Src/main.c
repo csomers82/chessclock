@@ -46,6 +46,7 @@
 /* USER CODE BEGIN Includes */
 //#include "stm32f0xx_hal_pwr.h"
 #include "application.h"
+#include "chessclock.h"
 #include "timestr.h"
 #include "JHD162A.h"
 /* USER CODE END Includes */
@@ -115,7 +116,7 @@ int main(void)
 
   // initialize player one's clock
   timestr_setch(0);
-  app_timestr_init(140);
+  app_timestr_init(40);
   app_timestr_print(LINE1);
 
   // initialize player two's clock
@@ -135,7 +136,7 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-    app_main();
+    chessclock_main();
 
   }
   /* USER CODE END 3 */

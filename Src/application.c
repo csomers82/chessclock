@@ -16,32 +16,41 @@
 #include "basic.h"
 #include "timestr.h"
 #include "application.h"
+#include "chessclock.h"
 #include "JHD162A.h"
-
-/*==========================================================================*\
- | MAIN MCU RAM  
-\*==========================================================================*/
-int               tenths          = 0;
-int               game_active     = 1;
-int               game_result     = 0;
-int               active_player   = 0;
-int               toggle_player   = 0;
-int               timing_modern   = 1;
-uint8_t           timing_add      = 30U;
-int               line            = LINE1;
-int               debounce[2]     = {0};
-int               toggle_check[2] = {0};
-int               bell_count      = 0;
 
 /*--------------------------------------------------------------------------*\
  | External Variable Definitions
 \*--------------------------------------------------------------------------*/
 
 extern uint8_t *  timestr;          // for timestr functions
-extern uint8_t *  timezf;           // for timestr functions
 extern char       itoaBuffer[6];    // for func: itoa_intobuffer
 
 extern TIM_HandleTypeDef htim1;
+
+struct BellCode bell_program1[2];
+struct BellCode bell_program2[2];
+struct BellCode bell_program3[9];
+
+/*==========================================================================*\
+ | MAIN MCU RAM  
+\*==========================================================================*/
+int                 tenths          = 0;
+int                 game_active     = 1;
+int                 game_result     = 0;
+int                 active_player   = 0;
+int                 toggle_player   = 0;
+int                 timing_modern   = 1;
+uint8_t             timing_add      = 30U;
+int                 line            = LINE1;
+int                 debounce[2]     = {0};
+int                 toggle_check[2] = {0};
+int                 bell_count      = 0;
+struct BellCode    *bell_pc         = 0;//null
+TIM_HandleTypeDef  *bellTIM         = &htim1; 
+uint32_t            bellCH          = TIM_CHANNEL_2;
+
+
 
 /*==========================================================================*\
  | ASSISTANT FUNCTIONS 
@@ -78,23 +87,56 @@ void app_timestr_init(int32_t t0) {
 }
 
 /*--------------------------------------------------------------------------*\
- | app_bell
- |    make sound with the pwm at buzzer
+ | app_bell_start
+ |    play the selected bell program 
 \*--------------------------------------------------------------------------*/
-void app_bell(int dur) {
-  //turn on the buzzer
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
-  //hold for 'dur' tenths of a sec
-  bell_count = dur;
+void app_bell_start(int program) {
+  // mv bell ptr to selected rhythm
+  switch(program) {
+    case CHIME_S: bell_pc = bell_program1; break;
+    case CHIME_L: bell_pc = bell_program2; break;
+    case ALARM_1: bell_pc = bell_program3; break;
+  }
+
+  // read the opening instruction
+  bell_count = bell_pc->t;
+  if (bell_pc->i == BELL_PLAY) {
+    HAL_TIM_PWM_Start(bellTIM, bellCH);
+  }
   return;
 }
 
+/*--------------------------------------------------------------------------*\
+ | app_bell_read
+ |    read the current bell instruction
+\*--------------------------------------------------------------------------*/
+int app_bell_read() {
+  if (bell_pc->i != BELL_HALT) {
+    // is instruction over?
+    if (bell_count == 0) {
+      bell_pc += 1;
+      bell_count = bell_pc->t;
+      // switch play state
+      switch (bell_pc->i) {
+        case BELL_PLAY:
+          HAL_TIM_PWM_Start(bellTIM, bellCH);
+          break;
+        case BELL_REST:
+        case BELL_HALT:
+          HAL_TIM_PWM_Stop(bellTIM, bellCH);
+          break;
+      }
+    }
+  }
+  return(bell_pc->i);
+}
 /*--------------------------------------------------------------------------*\
  | app_debounce 
  |    handle button states following ISR
 \*--------------------------------------------------------------------------*/
 void app_debounce(uint8_t p) {
-  int *Port, Pin;
+  GPIO_TypeDef *Port;
+  uint16_t    Pin;
   Port = (p == 0) ? TGLA_GPIO_Port  : TGLB_GPIO_Port;
   Pin  = (p == 0) ? TGLA_Pin        : TGLB_Pin;
 
@@ -117,136 +159,5 @@ void app_debounce(uint8_t p) {
     debounce[p]     = 0;
     toggle_player = 1;
   }
-  return;
-}
-
-/*==========================================================================*\
- | game types: 
-\*==========================================================================*/
-/*--------------------------------------------------------------------------*\
- | app_game_traditional 
- |    time never increases, linear burndown
-\*--------------------------------------------------------------------------*/
-void app_game_traditional() {
-  while (game_active)
-  {
-    // spend less time w/ proc active
-    HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFE);
-
-    // handle the passing of time
-    if (tenths == 10) {
-      tenths = 0;
-      timestr_sub(10U);
-      app_timestr_print(line);
-    }
-
-    // update the buzzer
-    if (!bell_count) {
-      HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_2);
-    }
-
-    // toggle check 
-    if (toggle_check[0]) {
-      app_debounce(0);
-    }
-    else if (toggle_check[1]) {
-      app_debounce(1);
-    }
-
-    // handle the toggle of players
-    if (toggle_player) {
-      toggle_player = 0;
-      app_timestr_print(line);
-      active_player = 1 - active_player;
-      timestr_setch(active_player);
-      line = (line == LINE1) ? LINE2 : LINE1;
-      app_bell(20);
-    }
-
-    // check gameover
-    if (timezf[active_player]) {
-      app_bell(60);
-      game_active = 0;
-    } 
-  }// while (game_active), modern timing        
-  return(0);
-}
-/*--------------------------------------------------------------------------*\
- | app_game_modern 
- |    time control is incremental 
-\*--------------------------------------------------------------------------*/
-void app_game_modern() {
-  while (game_active)
-  {
-    // spend less time w/ proc active
-    HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFE);
-
-    // handle the passing of time
-    if (tenths == 10) {
-      tenths = 0;
-      timestr_sub(10U);
-      app_timestr_print(line);
-    }
-
-    // update the buzzer
-    if (!bell_count) {
-      HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_2);
-    }
-
-    // toggle check 
-    if (toggle_check[0]) {
-      app_debounce(0);
-    }
-    else if (toggle_check[1]) {
-      app_debounce(1);
-    }
-
-    // handle the toggle of players
-    if (toggle_player) {
-      timestr_add(timing_add);
-      app_timestr_print(line);
-      active_player = 1 - active_player;
-      timestr_setch(active_player);
-      line = (line == LINE1) ? LINE2 : LINE1;
-      toggle_player = 0;
-      app_bell(20);
-    }
-
-    // check gameover
-    if (timezf[active_player]) {
-      app_bell(60);
-      game_active = 0;
-      game_result = GAMEOVER_TEXP + active_player;
-    } 
-  }// while (game_active), modern timing        
-  return(0);
-}
-
-/*==========================================================================*\
- | main: 
-\*==========================================================================*/
-void app_main() {
-  app_bell(10);
-  while(1) {
-    if (timing_modern) {
-      app_game_modern();
-    }
-    else {
-      app_game_traditional();
-    }
-
-    // wait for alarm off
-    while(bell_count) {
-      HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFE);
-    }
-    HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_2);
-
-    // wait for new game
-    while (!game_active) {
-      HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFE);
-    }
-    
-  }
-  // never return, else error
   return;
 }

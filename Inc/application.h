@@ -19,13 +19,29 @@
 #include "JHD162A.h"
 
 //==============================================================================
+//  Structs
+//==============================================================================
+struct BellCode {
+  int i;// instruction
+  int t;// duration
+};
+
+enum Bell_Progs { 
+  CHIME_S, 
+  CHIME_L,
+  ALARM_1
+};
+
+
+//==============================================================================
 //  Constants
 //==============================================================================
-#define DEBOUNCE_THRESH      (5)
+#define DEBOUNCE_THRESH (5)
 
-#define GAMEOVER_TEXP (0)
-#define GAMEOVER_CHKM (2)
-#define GAMEOVER_QUIT (4)
+// bell handler "opcodes"
+#define BELL_PLAY (2)
+#define BELL_REST (1)
+#define BELL_HALT (0)
 
 //==============================================================================
 //  Functions
@@ -50,37 +66,15 @@ void app_timestr_init(int32_t t0);
 void app_debounce(uint8_t p);
 
 /*--------------------------------------------------------------------------*\
- | app_game_modern 
- |    time control is incremental 
- |    
- |    time update
- |    bell update
- |    toggling debounce
- |    toggle handling (w/ addition)
- |    gamestate update
+ | app_bell_start
+ |    play the selected bell program 
 \*--------------------------------------------------------------------------*/
-void app_game_modern(void);
+void app_bell_start(int program);
 
 /*--------------------------------------------------------------------------*\
- | app_game_traditional 
- |    time never increases, linear burndown
- |    
- |    time update
- |    bell update
- |    toggling debounce
- |    toggle handling (w/o addition)
- |    gamestate update
+ | app_bell_read
+ |    read the current bell instruction
 \*--------------------------------------------------------------------------*/
-void app_game_traditional(void);
-
-/*--------------------------------------------------------------------------*\
- | app_main
- |    a sub-main to subvert sloppy stmcubemx functionallity 
- |
- |    menu_subroutine, 
- |    game_subroutine, 
- |    end_of_game handling
-\*--------------------------------------------------------------------------*/
-void app_main(void);
+int app_bell_read(void);
 
 #endif//__APPLICATION_
