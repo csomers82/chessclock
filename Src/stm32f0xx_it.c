@@ -36,13 +36,16 @@
 #include "stm32f0xx_it.h"
 
 /* USER CODE BEGIN 0 */
+#include "stm32f0xx_cs.h"
 #include "JHD162A.h"
 
 // from application.c
 extern int      tenths;
 extern int      tenth_flag;
 extern int      toggle_check[2];
-extern int      debounce[2];
+extern int      button_check[2];
+extern int      ts_debounce[2];
+extern int      pb_debounce[2];
 extern int		  bell_count;
 // from basic.c
 extern int      spi_busy;
@@ -147,15 +150,27 @@ void SysTick_Handler(void)
 void EXTI4_15_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI4_15_IRQn 0 */
-  if (HAL_GPIO_ReadPin(TGLA_GPIO_Port, TGLA_Pin)) {
-    debounce[0]     = 1;
+  uint32_t portB = stm32f0_read_gpio(GPIOB);
+  //-------------------------
+  // toggle switches
+  if (portB & TGLA_Pin) {
+    ts_debounce[0]     = 1;
     toggle_check[0] = 1;
   }
-  else if (HAL_GPIO_ReadPin(TGLB_GPIO_Port, TGLB_Pin)) {
-    debounce[1]     = 1;
+  else if (portB & TGLB_Pin) {
+    ts_debounce[1]     = 1;
     toggle_check[1] = 1;
   }
-
+  //-------------------------
+  // push buttons
+  if (portB & BTNA_Pin) {
+    pb_debounce[0]     = 1;
+    button_check[0] = 1;
+  }
+  else if (portB & BTNB_Pin) {
+    pb_debounce[1]     = 1;
+    button_check[1] = 1;
+  }
   /* USER CODE END EXTI4_15_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_7);
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_9);

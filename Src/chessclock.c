@@ -27,11 +27,13 @@ extern int        game_active;
 extern int        game_result;
 extern int        active_player;
 extern int        toggle_player;
+extern int        button_flag[2];
 extern int        count_player[2];
 extern int        timing_modern;
 extern uint8_t    timing_add;
 extern int        line;
 extern int        toggle_check[2];
+extern int        button_check[2];
 extern uint8_t   *timezf;
 
 /*--------------------------------------------------------------------------*\
@@ -53,7 +55,7 @@ void chessclock_modern() {
     // handle the passing of time
     if (tenth_flag) {
       // time logic
-      tenth_flag = 0;
+      tenth_flag = FALSE;
       count_player[active_player] -= 1; 
       // display logic
       if (count_player[active_player] < THRESH_TENTHS) {
@@ -61,10 +63,15 @@ void chessclock_modern() {
         timestr_sub(1U);
         app_timestr_print(line);
       }
-      else if (tenths == 10) {
-        tenths = 0;
-        timestr_sub(10U);
-        app_timestr_print(line);
+      else {
+        if (count_player[active_player] == THRESH_TENTHS) {
+          app_bell_start(ALARM_1);
+        }
+        if (tenths == 10) {
+          tenths = 0;
+          timestr_sub(10U);
+          app_timestr_print(line);
+        }
       }
     }
 
@@ -73,10 +80,23 @@ void chessclock_modern() {
 
     // toggle check 
     if (toggle_check[0]) {
-      app_debounce(0);
+      app_debounce_ts(0);
     }
     else if (toggle_check[1]) {
-      app_debounce(1);
+      app_debounce_ts(1);
+    }
+    
+    // button check
+    if (button_check[0] || button_check[1]) {
+      app_debounce_pb();
+      if (button_flag[0]) {
+        button_flag[0] = FALSE;
+        HAL_GPIO_WritePin(BONUS_GPIO_Port, BONUS_Pin, GPIO_PIN_SET);
+      } 
+      else if (button_flag[1]) {
+        button_flag[1] = FALSE;
+        HAL_GPIO_WritePin(BONUS_GPIO_Port, BONUS_Pin, GPIO_PIN_RESET);
+      }
     }
 
     // handle the toggle of players
@@ -87,13 +107,13 @@ void chessclock_modern() {
       active_player = 1 - active_player;
       timestr_setch(active_player);
       line = (line == LINE1) ? LINE2 : LINE1;
-      toggle_player = 0;
+      toggle_player = FALSE;
       app_bell_start(CHIME_S);
     }
 
     // check gameover
     if (*timezf) {
-      game_active = 0;
+      game_active = FALSE;
       game_result = GAMEOVER_TEXP + active_player;
     } 
   }// while (game_active), modern timing        
@@ -126,11 +146,11 @@ void chessclock_main() {
     }
 
     // wait for alarm off
-    app_bell_start(ALARM_1);
+    app_bell_start(ALARM_2);
     while (app_bell_read()) {
       app_mcu_sleep();
     }
-    app_bell_start(ALARM_1);
+    app_bell_start(ALARM_2);
     while (app_bell_read()) {
       app_mcu_sleep();
     }

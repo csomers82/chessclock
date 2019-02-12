@@ -29,7 +29,8 @@ struct BellCode {
 enum Bell_Progs { 
   CHIME_S, 
   CHIME_L,
-  ALARM_1
+  ALARM_1,
+  ALARM_2
 };
 
 
@@ -63,10 +64,16 @@ void app_timestr_print(char line);
 void app_timestr_init(int32_t t0);
 
 /*--------------------------------------------------------------------------*\
- | app_debounce 
- |    handle button states following ISR
+ | app_debounce_ts 
+ |    handle toggle switch states following ISR
 \*--------------------------------------------------------------------------*/
-void app_debounce(uint8_t p);
+void app_debounce_ts(uint8_t p);
+
+/*--------------------------------------------------------------------------*\
+ | app_debounce_pb
+ |    handle push button states following ISR
+\*--------------------------------------------------------------------------*/
+void app_debounce_pb(void);
 
 /*--------------------------------------------------------------------------*\
  | app_bell_start

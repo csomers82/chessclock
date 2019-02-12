@@ -10,6 +10,10 @@
 #define LINE1   0x80
 #define LINE2   0xC0
 
+// simple, less confusing pneumonics
+#define TRUE  1
+#define FALSE 0
+
 // simple utilities
 #define BIT0             (1)
 #define BIT1             (2)

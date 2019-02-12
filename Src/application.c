@@ -28,25 +28,29 @@ extern char       itoaBuffer[6];    // for func: itoa_intobuffer
 
 extern TIM_HandleTypeDef htim1;
 
-struct BellCode bell_program1[2];
-struct BellCode bell_program2[2];
-struct BellCode bell_program3[9];
+extern struct BellCode bell_program1[2];
+extern struct BellCode bell_program2[2];
+extern struct BellCode bell_program3[4];
+extern struct BellCode bell_program4[9];
 
 /*==========================================================================*\
  | MAIN MCU RAM  
 \*==========================================================================*/
-int                 tenth_flag      = 0;
+int                 tenth_flag      = FALSE;
 int                 tenths          = 0;
-int                 game_active     = 1;
+int                 game_active     = TRUE;
 int                 game_result     = 0;
 int                 active_player   = 0;
 int                 toggle_player   = 0;
+int                 button_flag[2]  = {0};
 int                 count_player[2] = {0};
-int                 timing_modern   = 1;
+int                 timing_modern   = TRUE;
 uint8_t             timing_add      = 30U;
 int                 line            = LINE1;
-int                 debounce[2]     = {0};
+int                 ts_debounce[2]  = {0};
+int                 pb_debounce[2]  = {0};
 int                 toggle_check[2] = {0};
+int                 button_check[2] = {0};
 int                 bell_count      = 0;
 struct BellCode    *bell_pc         = 0;//null
 TIM_HandleTypeDef  *bellTIM         = &htim1; 
@@ -115,6 +119,7 @@ void app_bell_start(int program) {
     case CHIME_S: bell_pc = bell_program1; break;
     case CHIME_L: bell_pc = bell_program2; break;
     case ALARM_1: bell_pc = bell_program3; break;
+    case ALARM_2: bell_pc = bell_program4; break;
   }
 
   // read the opening instruction
@@ -150,33 +155,70 @@ int app_bell_read() {
   return(bell_pc->i);
 }
 /*--------------------------------------------------------------------------*\
- | app_debounce 
- |    handle button states following ISR
+ | app_debounce_ts 
+ |    handle toggle switch states following ISR
 \*--------------------------------------------------------------------------*/
-void app_debounce(uint8_t p) {
+void app_debounce_ts(uint8_t p) {
   GPIO_TypeDef *Port;
-  uint16_t    Pin;
+  uint16_t      Pin;
   Port = (p == 0) ? TGLA_GPIO_Port  : TGLB_GPIO_Port;
   Pin  = (p == 0) ? TGLA_Pin        : TGLB_Pin;
 
   // filter if mistep
   if (active_player == (1 - p)) {
-    toggle_check[p] = 0;
-    debounce[p]     = 0;
+    toggle_check[p] = FALSE;
+    ts_debounce[p]  = 0;
   }
   // check pin state, inc success, quit fail
   if (HAL_GPIO_ReadPin(Port, Pin)) {
-    ++debounce[p];
+    ++ts_debounce[p];
   }
   else {
-    toggle_check[p] = 0;
-    debounce[p]     = 0;
+    toggle_check[p] = FALSE;
+    ts_debounce[p]  = 0;
   }
   // success exit
-  if(debounce[p] == THRESH_DEBOUNCE) {
-    toggle_check[p] = 0;
-    debounce[p]     = 0;
-    toggle_player = 1;
+  if(ts_debounce[p] == THRESH_DEBOUNCE) {
+    toggle_check[p] = FALSE;
+    ts_debounce[p]  = 0;
+    toggle_player   = TRUE;
+  }
+  return;
+}
+
+/*--------------------------------------------------------------------------*\
+ | app_debounce_pb
+ |    handle push button states following ISR
+\*--------------------------------------------------------------------------*/
+void app_debounce_pb() {
+  uint32_t portB = ~stm32f0_read_gpio(GPIOB);
+
+  // check pin state, inc success, quit fail
+  if (portB & BTNA_Pin) {
+    ++pb_debounce[0];
+    if(pb_debounce[0] == THRESH_DEBOUNCE) {
+      button_flag[0]  = TRUE;
+      button_check[0] = FALSE;
+      pb_debounce[0]  = 0; 
+    }
+  }
+  else { 
+    button_check[0] = FALSE;
+    pb_debounce[0]  = 0;
+  }
+
+  // check pin state, inc success, quit fail
+  if (portB & BTNB_Pin) {
+    ++pb_debounce[1];
+    if(pb_debounce[1] == THRESH_DEBOUNCE) {
+      button_flag[1]  = TRUE;
+      button_check[1] = FALSE;
+      pb_debounce[1]  = 0; 
+    }
+  }
+  else { 
+    button_check[1] = FALSE;
+    pb_debounce[1]  = 0;
   }
   return;
 }
