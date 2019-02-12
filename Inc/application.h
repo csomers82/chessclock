@@ -37,8 +37,15 @@ enum Bell_Progs {
 //==============================================================================
 //  Constants
 //==============================================================================
-#define THRESH_DEBOUNCE     (5)
+
+// program system tweekables
 #define THRESH_TENTHS       (210)
+
+// mcu system tweekables
+#define TS_DEB_THRESH       (3)
+#define TS_DEB_ATTEMPTS     (5)
+#define PB_DEB_THRESH       (3)
+#define PB_DEB_ATTEMPTS     (5)
 
 // bell handler "opcodes"
 #define BELL_PLAY (2)

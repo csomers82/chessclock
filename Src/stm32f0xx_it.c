@@ -36,6 +36,7 @@
 #include "stm32f0xx_it.h"
 
 /* USER CODE BEGIN 0 */
+#include "application.h"
 #include "stm32f0xx_cs.h"
 #include "JHD162A.h"
 
@@ -46,7 +47,7 @@ extern int      toggle_check[2];
 extern int      button_check[2];
 extern int      ts_debounce[2];
 extern int      pb_debounce[2];
-extern int		  bell_count;
+extern int      bell_count;
 // from basic.c
 extern int      spi_busy;
 /* USER CODE END 0 */
@@ -87,9 +88,9 @@ void HardFault_Handler(void)
   while (1)
   {
     /* USER CODE BEGIN W1_HardFault_IRQn 0 */
-	HAL_GPIO_WritePin(BONUS_GPIO_Port, BONUS_Pin, GPIO_PIN_SET);
-	HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFE);
-	/* USER CODE END W1_HardFault_IRQn 0 */
+  HAL_GPIO_WritePin(BONUS_GPIO_Port, BONUS_Pin, GPIO_PIN_SET);
+  HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFE);
+  /* USER CODE END W1_HardFault_IRQn 0 */
   }
   /* USER CODE BEGIN HardFault_IRQn 1 */
 
@@ -154,22 +155,22 @@ void EXTI4_15_IRQHandler(void)
   //-------------------------
   // toggle switches
   if (portB & TGLA_Pin) {
-    ts_debounce[0]     = 1;
-    toggle_check[0] = 1;
+    ts_debounce[0]    = 1;
+    toggle_check[0]   = 1;
   }
   else if (portB & TGLB_Pin) {
-    ts_debounce[1]     = 1;
-    toggle_check[1] = 1;
+    ts_debounce[1]    = 1;
+    toggle_check[1]   = 1;
   }
   //-------------------------
   // push buttons
   if (portB & BTNA_Pin) {
-    pb_debounce[0]     = 1;
-    button_check[0] = 1;
+    pb_debounce[0]    = 1;
+    button_check[0]   = PB_DEB_ATTEMPTS;
   }
   else if (portB & BTNB_Pin) {
-    pb_debounce[1]     = 1;
-    button_check[1] = 1;
+    pb_debounce[1]    = 1;
+    button_check[1]   = PB_DEB_ATTEMPTS;
   }
   /* USER CODE END EXTI4_15_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_7);

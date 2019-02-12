@@ -178,7 +178,7 @@ void app_debounce_ts(uint8_t p) {
     ts_debounce[p]  = 0;
   }
   // success exit
-  if(ts_debounce[p] == THRESH_DEBOUNCE) {
+  if(ts_debounce[p] == TS_DEB_THRESH) {
     toggle_check[p] = FALSE;
     ts_debounce[p]  = 0;
     toggle_player   = TRUE;
@@ -196,29 +196,30 @@ void app_debounce_pb() {
   // check pin state, inc success, quit fail
   if (portB & BTNA_Pin) {
     ++pb_debounce[0];
-    if(pb_debounce[0] == THRESH_DEBOUNCE) {
-      button_flag[0]  = TRUE;
-      button_check[0] = FALSE;
-      pb_debounce[0]  = 0; 
-    }
   }
-  else { 
-    button_check[0] = FALSE;
-    pb_debounce[0]  = 0;
+  // check end condition
+  if ((--button_check[0] == 0) || 
+      (pb_debounce[0] >= PB_DEB_THRESH))  
+  {
+    if (pb_debounce[0] >= PB_DEB_THRESH) {
+      button_flag[0]  = TRUE;
+    }
+    pb_debounce[0]  = 0; 
+  }
+  
+  // check pin state, inc success, quit fail
+  if (portB & BTNA_Pin) {
+    ++pb_debounce[1];
+  }
+  // check end condition
+  if ((--button_check[1] == 0) || 
+      (pb_debounce[1] >= PB_DEB_THRESH))  
+  {
+    if (pb_debounce[1] >= PB_DEB_THRESH) {
+      button_flag[1]  = TRUE;
+    }
+    pb_debounce[1]  = 0; 
   }
 
-  // check pin state, inc success, quit fail
-  if (portB & BTNB_Pin) {
-    ++pb_debounce[1];
-    if(pb_debounce[1] == THRESH_DEBOUNCE) {
-      button_flag[1]  = TRUE;
-      button_check[1] = FALSE;
-      pb_debounce[1]  = 0; 
-    }
-  }
-  else { 
-    button_check[1] = FALSE;
-    pb_debounce[1]  = 0;
-  }
   return;
 }
