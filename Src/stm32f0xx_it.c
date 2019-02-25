@@ -164,6 +164,7 @@ void EXTI4_15_IRQHandler(void)
   }
   //-------------------------
   // push buttons
+  portB = ~portB;
   if (portB & BTNA_Pin) {
     pb_debounce[0]    = 1;
     button_check[0]   = PB_DEB_ATTEMPTS;

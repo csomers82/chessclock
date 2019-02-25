@@ -120,22 +120,29 @@ void chessclock_modern() {
   return;
 }
 
+/*--------------------------------------------------------------------------*\
+ | chessclock_setup
+ |    initializes the clocks and settings for the game 
+\*--------------------------------------------------------------------------*/
+void chessclock_setup(uint32_t t) {
+  
+  // initialize player two's clock
+  timestr_setch(1);
+  app_timestr_init(t);
+  app_timestr_print(LINE2);
+
+  timestr_setch(0);
+  app_timestr_init(t);
+  app_timestr_print(LINE1);
+}
+
 /*==========================================================================*\
  | main: 
 \*==========================================================================*/
 void chessclock_main() {
-  // initialize player one's clock
-  timestr_setch(0);
-  app_timestr_init(250);
-  app_timestr_print(LINE1);
 
-  // initialize player two's clock
-  timestr_setch(1);
-  app_timestr_init(250);
-  app_timestr_print(LINE2);
-  
-  // start of play
-  timestr_setch(0);
+  // start of play 
+  chessclock_setup(MINUTES(3) + SECONDS(31));
   app_bell_start(CHIME_S);
   while(1) {
     if (timing_modern) {
