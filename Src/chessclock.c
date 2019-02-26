@@ -10,6 +10,7 @@
 //==============================================================================
 
 #include "main.h"
+#include "menus.h"
 #include "basic.h"
 #include "timestr.h"
 #include "application.h"
@@ -21,10 +22,14 @@
 /*--------------------------------------------------------------------------*\
  | External Variable Definitions
 \*--------------------------------------------------------------------------*/
+extern int        menu_index;
+extern int        menu_title;
+extern int        menu_event;
 extern int        tenth_flag;
 extern int        tenths;
 extern int        game_active;
 extern int        game_result;
+extern int        bell_on;
 extern int        active_player;
 extern int        toggle_player;
 extern int        button_flag[2];
@@ -36,6 +41,68 @@ extern int        toggle_check[2];
 extern int        button_check[2];
 extern uint8_t   *timezf;
 
+/*--------------------------------------------------------------------------*\
+ | chessclock_menu
+ |    handle menu navigation and input events until game setup 
+\*--------------------------------------------------------------------------*/
+void chessclock_menu() {
+  // menu screen always enters from main menu
+  menu_index      = 1;
+  menu_title      = 0;
+  // draw menu screen on enter
+  menu_event      = TRUE;
+
+  while (! game_active ) {
+    //------------------------------
+    // handle navigation
+    //------------------------------
+    if (menu_event) {
+      if (bell_on) {
+        app_bell_start(CHIME_S);
+      }
+      menu_event = FALSE;
+      menu_draw(menu_title, menu_index);
+    }
+
+    //------------------------------
+    // handle input
+    //------------------------------
+    if (tenth_flag) {
+      // time logic
+      tenth_flag = FALSE;
+    }
+
+    // update the buzzer
+    app_bell_read();
+
+    // toggle check 
+    if (toggle_check[0]) {
+      app_debounce_ts(0);
+    }
+    else if (toggle_check[1]) {
+      app_debounce_ts(1);
+    }
+    
+    // button check
+    if (button_check[0] || button_check[1]) {
+      app_debounce_pb();
+      if (button_flag[0]) {
+        button_flag[0] = FALSE;
+        HAL_GPIO_WritePin(BONUS_GPIO_Port, BONUS_Pin, GPIO_PIN_SET);
+      } 
+      else if (button_flag[1]) {
+        button_flag[1] = FALSE;
+        HAL_GPIO_WritePin(BONUS_GPIO_Port, BONUS_Pin, GPIO_PIN_RESET);
+      }
+    }
+        
+    //------------------------------
+    // sleep till next event
+    //------------------------------
+    app_mcu_sleep();
+  }
+  return;
+}
 /*--------------------------------------------------------------------------*\
  | chessclock_traditional 
  |    time never increases, linear burndown
@@ -50,7 +117,7 @@ void chessclock_traditional() {
 void chessclock_modern() {
   while (game_active) {
     // spend less time w/ proc active
-    HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFE);
+    app_mcu_sleep();
 
     // handle the passing of time
     if (tenth_flag) {

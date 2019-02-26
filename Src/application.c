@@ -36,9 +36,12 @@ extern struct BellCode bell_program4[9];
 /*==========================================================================*\
  | MAIN MCU RAM  
 \*==========================================================================*/
+int                 menu_index      = 1;
+int                 menu_title      = 0;
+int                 menu_event      = FALSE;
 int                 tenth_flag      = FALSE;
 int                 tenths          = 0;
-int                 game_active     = TRUE;
+int                 game_active     = FALSE;
 int                 game_result     = 0;
 int                 active_player   = 0;
 int                 toggle_player   = 0;
@@ -52,16 +55,20 @@ int                 ts_debounce[2]  = {0};
 int                 pb_debounce[2]  = {0};
 int                 toggle_check[2] = {0};
 int                 button_check[2] = {0};
+int                 bell_on         = TRUE;
 int                 bell_count      = 0;
 struct BellCode    *bell_pc         = 0;//null
 TIM_HandleTypeDef  *bellTIM         = &htim1; 
 uint32_t            bellCH          = TIM_CHANNEL_2;
+enum ColorScheme    color_scheme    = BVG;
 
 
 
 /*==========================================================================*\
  | ASSISTANT FUNCTIONS 
 \*==========================================================================*/
+
+
 
 /*--------------------------------------------------------------------------*\
  | app_timestr_print

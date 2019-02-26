@@ -33,11 +33,11 @@ enum Bell_Progs {
   ALARM_2
 };
 
-enum Colorscheme_e {
+enum ColorScheme {
   BVG,// blue versus green
   YVM,// yellow versus magenta
   WTR // white then red
-}
+};
 
 
 //==============================================================================

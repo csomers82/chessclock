@@ -9,6 +9,9 @@
 //
 //==============================================================================
 
+#include "application.h"
+#include "chessclock.h"
+
 #define WIDTH           (16)
 #define N_MENU_STRS     (31)
 #define N_MENUS         (7)
@@ -17,15 +20,30 @@
 /*--------------------------------------------------------------------------*\
  | External Variable Definitions
 \*--------------------------------------------------------------------------*/
-extern int        timing_modern;
-extern int        timing_limit;
-extern uint8_t    timing_add;
+extern int              timing_modern;
+extern int              timing_limit;
+extern uint8_t          timing_add;
+extern int              menu_index;
+extern int              menu_title;
+extern int              bell_on;
+
+extern enum ColorScheme color_scheme;
 
 /*--------------------------------------------------------------------------*\
  | Internal "Data Segment"
 \*--------------------------------------------------------------------------*/
 
-char menu_str[WIDTH][N_MENU_STRS] = {
+int  menu_lens[N_MENUS] = {
+  3,//main menu
+  4,//select game
+  3,//color scheme
+  3,//bullet chess
+  4,//blitz chess
+  4,//rapid chess
+  4 //classic chess
+};
+
+char menu_str[N_MENU_STRS][WIDTH] = {
 // ================,
   "main menu       ", // 0
   " select game    ", // 1
@@ -58,7 +76,7 @@ char menu_str[WIDTH][N_MENU_STRS] = {
   "   30m +  0s    ", // 28 
   "   30m + 30s    ", // 29
   "   back         "  // 30
-}               
+};
 
 /*--------------------------------------------------------------------------*\
  | Menu Navigation Functions 
@@ -75,6 +93,7 @@ int menu_main() {
       bell_on         = (bell_on) ?  0 :  1;
       return(1);
   }
+  return(menu_index);
 }
 
 
@@ -91,6 +110,7 @@ int menu_select_game() {
     case 8: // back
       return(1);
   }
+  return(menu_index);
 }
 
 int menu_color_scheme() {
@@ -118,6 +138,7 @@ int menu_color_scheme() {
     case 12: // back
       return(0);
   }
+  return(menu_index);
 }
 
 int menu_game_format () {
@@ -184,4 +205,12 @@ int menu_game_format () {
       timing_add = SECONDS(30); break;
   }
   return(PREGAME_SCREEN);
+}
+
+void menu_draw(int title, int index) {
+  chgline(LINE1);
+  lcdprint(menu_str[title]);
+  chgline(LINE2);
+  lcdprint(menu_str[index]);
+  return;
 }
