@@ -33,6 +33,12 @@ enum Bell_Progs {
   ALARM_2
 };
 
+enum Colorscheme_e {
+  BVG,// blue versus green
+  YVM,// yellow versus magenta
+  WTR // white then red
+}
+
 
 //==============================================================================
 //  Constants
@@ -44,14 +50,15 @@ enum Bell_Progs {
 // mcu system tweekables
 #define TS_DEB_THRESH       (3)
 #define TS_DEB_ATTEMPTS     (5)
-#define PB_DEB_THRESH       (3)
-#define PB_DEB_ATTEMPTS     (5)
+#define PB_DEB_THRESH       (2)
+#define PB_DEB_ATTEMPTS     (4)
 
 // bell handler "opcodes"
 #define BELL_PLAY (2)
 #define BELL_REST (1)
 #define BELL_HALT (0)
 
+// User Hardware Abstraction
 #define app_mcu_sleep()     (HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFE))
 
 //==============================================================================

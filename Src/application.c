@@ -45,6 +45,7 @@ int                 toggle_player   = 0;
 int                 button_flag[2]  = {0};
 int                 count_player[2] = {0};
 int                 timing_modern   = TRUE;
+int                 timing_limit    = SECONDS(600);
 uint8_t             timing_add      = 30U;
 int                 line            = LINE1;
 int                 ts_debounce[2]  = {0};
@@ -198,13 +199,15 @@ void app_debounce_pb() {
     ++pb_debounce[0];
   }
   // check end condition
-  if ((--button_check[0] == 0) || 
-      (pb_debounce[0] >= PB_DEB_THRESH))  
-  {
-    if (pb_debounce[0] >= PB_DEB_THRESH) {
-      button_flag[0]  = TRUE;
+  if (button_check[0]) {
+    if ((--button_check[0] == 0) || 
+        (pb_debounce[0] >= PB_DEB_THRESH))  
+    {
+      if (pb_debounce[0] >= PB_DEB_THRESH) {
+        button_flag[0]  = TRUE;
+      }
+      pb_debounce[0]  = 0; 
     }
-    pb_debounce[0]  = 0; 
   }
   
   // check pin state, inc success, quit fail
@@ -212,14 +215,15 @@ void app_debounce_pb() {
     ++pb_debounce[1];
   }
   // check end condition
-  if ((--button_check[1] == 0) || 
-      (pb_debounce[1] >= PB_DEB_THRESH))  
-  {
-    if (pb_debounce[1] >= PB_DEB_THRESH) {
-      button_flag[1]  = TRUE;
+  if (button_check[1]) {
+    if ((--button_check[1] == 0) || 
+        (pb_debounce[1] >= PB_DEB_THRESH))  
+    {
+      if (pb_debounce[1] >= PB_DEB_THRESH) {
+        button_flag[1]  = TRUE;
+      }
+      pb_debounce[1]  = 0; 
     }
-    pb_debounce[1]  = 0; 
   }
-
   return;
 }
