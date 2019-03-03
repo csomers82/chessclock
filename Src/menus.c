@@ -11,6 +11,7 @@
 
 #include "application.h"
 #include "chessclock.h"
+#include "menus.h"
 
 #define N_MENU_CHARS    (16)
 #define N_MENU_STRS     (31)
@@ -23,11 +24,9 @@
 extern int              timing_modern;
 extern int              timing_limit;
 extern uint8_t          timing_add;
+extern int              scroll_index;
 extern int              menu_index;
-extern int              menu_title;
-extern int              menu_start;
-extern int              menu_flag;
-extern int              bell_on;
+extern int              bell_on[4];
 extern int              active_player;
 extern int              button_flag[2];
 extern int              toggle_player;
@@ -37,151 +36,161 @@ extern enum ColorScheme color_scheme;
  | Internal "Data Segment"
 \*--------------------------------------------------------------------------*/
 
-int  menu_len[N_MENUS] = {
-  3,//main menu
-  5,//select game
-  4,//color scheme
-  0,//mute sounds 
-    // *item present so menu_title is an index*
-  4,//bullet chess
-  5,//blitz chess
-  5,//rapid chess
-  5 //classic chess
-};
-
-int  menu_parent[N_MENUS] = {
-  0,//main menu (no parent)
-  0,//select game
-  0,//color scheme
-  0,//mute sounds 
-    // *item present so menu_title is an index*
-  3,//bullet chess
-  3,//blitz chess
-  3,//rapid chess
-  3 //classic chess
-};
-
 char menu_str[N_MENU_STRS][N_MENU_CHARS+1] = {
 //"0123456789abcdef" \0
-  "main menu       ", // 0
-  " select game    ", // 1
-  " color scheme   ", // 2
-  " mute sounds    ", // 3
-  "  bullet chess  ", // 4
-  "  blitz chess   ", // 5
-  "  rapid chess   ", // 6
-  "  classic chess ", // 7
-  "  back          ", // 8
-  "  blu vs grn    ", // 9
-  "  yel vs mag    ", // 10
-  "  wht, red@30s  ", // 11
-  "  back          ", // 12
-  "   30s +  1s    ", // 13
-  "    1m +  0s    ", // 14
-  "    2m +  1s    ", // 15
-  "   back         ", // 16
-  "    3m +  0s    ", // 17
-  "    3m +  2s    ", // 18
-  "    5m +  0s    ", // 19
-  "    5m +  2s    ", // 20
-  "   back         ", // 21
-  "   10m +  0s    ", // 22
-  "   10m + 10s    ", // 23
-  "   15m + 15s    ", // 24
-  "   back         ", // 25
-  "   20m +  0s    ", // 26
-  "   20m + 20s    ", // 27
-  "   30m +  0s    ", // 28 
-  "   30m + 30s    ", // 29
-  "   back         "  // 30
+  "main menu     ", 
+  "select game   ", 
+  "color scheme  ", 
+  "sound menu    ", 
+
+//"0123456789abcdef" \0
+  "bullet chess  ", 
+  "blitz chess   ", 
+  "rapid chess   ", 
+  "classic chess ", 
+
+//"0123456789abcdef" \0
+  "blu vs grn   *", 
+  "yel vs mag    ", 
+  "wht, 30s=red  ", 
+
+//"0123456789abcdef" \0
+  "30s +  1s     ", 
+  " 1m +  0s     ", 
+  " 2m +  1s     ", 
+
+//"0123456789abcdef" \0
+  " 3m +  0s     ", 
+  " 3m +  2s     ", 
+  " 5m +  0s     ", 
+  " 5m +  2s     ", 
+
+//"0123456789abcdef" \0
+  "10m +  0s     ", 
+  "10m + 10s     ", 
+  "15m + 15s     ", 
+
+//"0123456789abcdef" \0
+  "20m +  0s     ", 
+  "20m + 20s     ", 
+  "30m +  0s     ", 
+  "30m + 30s     ", 
+
+//"0123456789abcdef" \0
+  "menu sounds  T", 
+  "toggle beep  T", 
+  "30sec alarm  T", 
+  "start/finish T"  
 };
 
 /*--------------------------------------------------------------------------*\
  | Menu Navigation Functions 
 \*--------------------------------------------------------------------------*/
+struct MenuBlock menu[8] = {
+//{parent       , len, title         , start        , type    }
+  {0            , 3-1, S_MAINMENU    , S_CHOOSEGAME , NAVIGATE},
+  {B_MAINMENU   ,   4, S_CHOOSEGAME  , S_BULLETCHESS, NAVIGATE},
+  {B_MAINMENU   ,   3, S_COLORSCHEME , S_BLUVSGRN   , COLOR   },
+  {B_MAINMENU   ,   4, S_SOUNDMENU   , S_MENUSOUNDS , SOUND   },
+  {B_CHOOSEGAME ,   3, S_BULLETCHESS , S_T30S_I01S  , GAMETYPE},
+  {B_CHOOSEGAME ,   4, S_BLITZCHESS  , S_T03M_I00S  , GAMETYPE},
+  {B_CHOOSEGAME ,   3, S_RAPIDCHESS  , S_T10M_I00S  , GAMETYPE},
+  {B_CHOOSEGAME ,   4, S_CLASSICCHESS, S_T20M_I00S  , GAMETYPE}
+};
 
-int menu_main() {
-  switch ( menu_index ) {
-    case 1:// select game
-      return(4);
-    case 2:// color scheme
-      return(9);
-    case 3:// mute sounds
-      menu_str[3][14] = (bell_on) ? '*': ' ';
-      bell_on         = (bell_on) ?  0 :  1;
-      menu_flag       = TRUE;
+/*--------------------------------------------------------------------------*\
+ | Menu Navigation Functions 
+\*--------------------------------------------------------------------------*/
+int menu_navigate(int mi, int si) {
+  switch (mi) {
+    case B_MAINMENU:
+      // S_CHOOSEGAME,
+      // S_COLORSCHEME,
+      // S_MUTESOUNDS,
+      switch (si) {
+        case 0: menu_index = B_CHOOSEGAME; break; 
+        case 1: menu_index = B_COLORSCHEME; break; 
+        case 2: menu_index = B_SOUNDMENU; break; 
+      }
+      break;
+
+    case B_CHOOSEGAME:
+      // S_BULLETCHESS,
+      // S_BLITZCHESS,
+      // S_RAPIDCHESS,
+      // S_CLASSICCHESS,
+      switch (si) {
+        case 0: menu_index = B_BULLETCHESS; break; 
+        case 1: menu_index = B_BLITZCHESS; break; 
+        case 2: menu_index = B_RAPIDCHESS; break; 
+        case 3: menu_index = B_CLASSICCHESS; break; 
+        default: menu_index = menu[menu_index].parent;
+      }
+      break;
   }
-  return(menu_index);
+  scroll_index = 0;
+  return(TRUE);
 }
 
 
 /*--------------------------------------------------------------------------*\
- | menu_select_game
+ | menu_color
 \*--------------------------------------------------------------------------*/
-int menu_select_game() {
-  switch ( menu_index ) {
-    case 4: // bullet chess
-      return(13);
-    case 5: // blitz chess
-      return(17);
-    case 6: // rapid chess
-      return(22);
-    case 7: // classic chess
-      return(26);
-    case 8: // back
-      menu_index = 0;
-      return(1);
+int menu_color(int si) {
+  switch ( si ) {
+    case 0: // blu vs grn
+    case 1: // yel vs mag
+    case 2: // wht, red@30s
+      menu_str[S_BLUVSGRN   ][13] = ' ';
+      menu_str[S_YELVSMAG   ][13] = ' ';
+      menu_str[S_WHTREDAT30S][13] = ' ';
   }
-  return(menu_index);
+  switch ( si ) {
+    case 0: // blu vs grn
+      menu_str[S_BLUVSGRN   ][13] = '*';
+      color_scheme                = BVG; 
+      break;
+    case 1: // yel vs mag
+      menu_str[S_YELVSMAG   ][13] = '*';
+      color_scheme                = YVM; 
+      break;
+    case 2: // wht, red@30s
+      menu_str[S_WHTREDAT30S][13] = '*';
+      color_scheme                = WTR; 
+      break;
+    case 3: // back
+    default:
+      menu_index    = menu[menu_index].parent;
+      scroll_index  = 0;
+      return(TRUE);
+  }
+  return(FALSE);
 }
 
 /*--------------------------------------------------------------------------*\
- | menu_color_scheme
+ | menu_sound
 \*--------------------------------------------------------------------------*/
-int menu_color_scheme() {
-  switch ( menu_index ) {
-    case 9 : // blu vs grn
-    case 10: // yel vs mag
-    case 11: // wht, red@30s
-      menu_str[ 9][14] = ' ';
-      menu_str[10][14] = ' ';
-      menu_str[11][14] = ' ';
+int menu_sound(int si) {
+  int was = bell_on[si];
+  switch ( si ) {
+    case 0:// BELL_MENUSOUNDS,
+    case 1:// BELL_PLAYERTOGGLE,
+    case 2:// BELL_SECALARM,
+    case 3:// BELL_STARTFINISH
+      bell_on[si]                     = (was) ? FALSE : TRUE;
+      menu_str[si + S_MENUSOUNDS][13] = (was) ? 'F' : 'T';  
+      return(FALSE);
+    case 4: // back
+    default:
+      menu_index    = menu[menu_index].parent;
+      scroll_index  = 0;
   }
-  switch ( menu_index ) {
-    case 9 : // blu vs grn
-      menu_str[ 9][14]  = '*';
-      color_scheme      = BVG; 
-      menu_flag         = TRUE;
-      break;
-    case 10: // yel vs mag
-      menu_str[10][14]  = '*';
-      color_scheme      = YVM; 
-      menu_flag         = TRUE;
-      break;
-    case 11: // wht, red@30s
-      menu_str[11][14]  = '*';
-      color_scheme      = WTR; 
-      menu_flag         = TRUE;
-      break;
-    case 12: // back
-      menu_index = 0;
-      return(1);
-  }
-  return(menu_index);
+  return(TRUE);
 }
-
 /*--------------------------------------------------------------------------*\
  | menu_game_format
 \*--------------------------------------------------------------------------*/
-int menu_game_format () {
-  switch ( menu_index ) { 
-    case 16: // back     
-    case 21: // back     
-    case 25: // back     
-    case 30: // back     
-      menu_index = 3;
-      return(4);
-  }
+int menu_game_format (int mi, int si) {
   switch ( menu_index ) {
     case 13: // 30s +  1s
       timing_limit = SECONDS(30); break; 
@@ -243,11 +252,20 @@ int menu_game_format () {
 /*--------------------------------------------------------------------------*\
  | menu_draw
 \*--------------------------------------------------------------------------*/
-void menu_draw(int title, int index) {
+void menu_draw() {
+  struct MenuBlock m = menu[menu_index];
   chgline(LINE1);
-  lcdprint(menu_str[title]);
+  lcdprint(menu_str[m.title]);
+
   chgline(LINE2);
-  lcdprint(menu_str[index]);
+  print_c(' ');
+  print_c(' ');
+  if (menu_index == B_MAINMENU) 
+    lcdprint(menu_str[m.start + scroll_index]);
+  else if (scroll_index < m.len) 
+    lcdprint(menu_str[m.start + scroll_index]);
+  else
+    lcdprint("back -^       ");
   return;
 }
 
@@ -256,80 +274,85 @@ void menu_draw(int title, int index) {
 \*--------------------------------------------------------------------------*/
 int menu_input() {
   int is_event = FALSE;
-  int start    = 0;
 
-  // toggle/rotate button 
+  // select button
   if (button_flag[0]) {
     // handle input
     button_flag[0]  = FALSE;
     is_event        = TRUE;
-    basic_devled_on();
-    
-    // handle navigation
-    switch (menu_title) {
-      case 7: //  classic chess 
-      case 6: //  rapid chess   
-      case 5: //  blitz chess   
-      case 4: //  bullet chess  
-        start = menu_game_format(); 
-        break;
-
-      case 2: // color scheme   
-        start = menu_color_scheme(); 
-        break;
-
-      case 1: // select game    
-        start = menu_select_game(); 
-        break;
-
-      case 0: //main menu       
-      default:
-        start = menu_main(); 
-    }
-    // new title = last selected menu item
-    //menu_last  = menu_title;
-    if (! menu_flag ) {
-      menu_start = start;
-      menu_title = menu_index;
-      // new index = start of submenu
-      menu_index = menu_start;
-    }
-    menu_flag = FALSE;
+    menu_select();
   } 
 
-  // select button
+  // toggle/rotate button 
   else if (button_flag[1]) {
     button_flag[1]  = FALSE;
     is_event        = TRUE;
-    basic_devled_off();
-
-    //-=-=-=-=-=-=-=-=-=-=
-    // ROTATION LOGIC
-    //-=-=-=-=-=-=-=-=-=-=
-    if (active_player == 0) {
-      // rotate forward
-      menu_index += 1;
-
-      // check roll over condition
-      if (menu_index >= menu_start + menu_len[menu_title]) {
-        menu_index = menu_start;
-      }
-    }
-    else {
-      // rotate backward 
-      menu_index -= 1;
-
-      // check roll over condition
-      if (menu_index < menu_start) {
-        menu_index = (menu_start + menu_len[menu_title] - 1);
-      }
-    }
+    menu_rotate(&scroll_index, menu[menu_index].len);
   }
 
   // direction button
   else if (toggle_player) {
+    toggle_player   = FALSE;
     active_player   = (1 - active_player);
+
+    if(active_player == 1) 
+      basic_devled_on();
+    else if (active_player == 0)
+      basic_devled_off();
   }
   
   return(is_event);
+}
+
+/*--------------------------------------------------------------------------*\
+ | menu_select
+ |    encapsules the selection logic
+\*--------------------------------------------------------------------------*/
+void menu_select() {
+  struct MenuBlock m = menu[menu_index];
+  int nav = FALSE;
+
+  // handle navigation
+  switch (m.type) {
+    case GAMETYPE: 
+      nav = menu_game_format(menu_index, scroll_index); break;
+    case COLOR: 
+      nav = menu_color(scroll_index); break;
+    case SOUND: 
+      nav = menu_sound(scroll_index); break;
+    case NAVIGATE: 
+      nav = menu_navigate(menu_index, scroll_index); break;
+  }
+
+  return;
+}
+
+
+
+/*--------------------------------------------------------------------------*\
+ | menu_rotate
+ |    encapsules the menu radix logic
+\*--------------------------------------------------------------------------*/
+void menu_rotate(int *si, int max) {
+
+  // rotate forward
+  if (active_player == 0) {
+    *si += 1;
+
+    // check roll over condition
+    if (*si > max) {
+      *si = 0;
+    }
+  }
+
+  // rotate backward 
+  else if (active_player == 1) {
+    *si -= 1;
+
+    // check roll over condition
+    if (*si < 0) {
+      *si = max; 
+    }
+  }
+  return;
 }

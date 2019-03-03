@@ -40,6 +40,12 @@ enum ColorScheme {
   WTR // white then red
 };
 
+enum SoundSettings {
+  BELL_MENUSOUNDS,
+  BELL_PLAYERTOGGLE,
+  BELL_SECALARM,
+  BELL_STARTFINISH
+};
 
 //==============================================================================
 //  Constants

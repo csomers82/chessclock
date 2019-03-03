@@ -37,10 +37,8 @@ extern struct BellCode bell_program5[2];
 /*==========================================================================*\
  | MAIN MCU RAM  
 \*==========================================================================*/
-int                 menu_index      = 1;
-int                 menu_start      = 1;
-int                 menu_title      = 0;
-int                 menu_flag       = FALSE;
+int                 menu_index      = 0;
+int                 scroll_index    = 0;
 int                 menu_event      = FALSE;
 int                 tenth_flag      = FALSE;
 int                 tenths          = 0;
@@ -58,11 +56,16 @@ int                 ts_debounce[2]  = {0};
 int                 pb_debounce[2]  = {0};
 int                 toggle_check[2] = {0};
 int                 button_check[2] = {0};
-int                 bell_on         = TRUE;
 int                 bell_count      = 0;
 struct BellCode    *bell_pc         = 0;//null
 TIM_HandleTypeDef  *bellTIM         = &htim1; 
 uint32_t            bellCH          = TIM_CHANNEL_2;
+int                 bell_on[4]      = { 
+    TRUE,// BELL_MENUSOUNDS,   
+    TRUE,// BELL_PLAYERTOGGLE, 
+    TRUE,// BELL_SECALARM,     
+    TRUE // BELL_STARTFINISH
+};
 enum ColorScheme    color_scheme    = BVG;
 
 

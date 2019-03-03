@@ -29,7 +29,7 @@ extern int        tenth_flag;
 extern int        tenths;
 extern int        game_active;
 extern int        game_result;
-extern int        bell_on;
+extern int        bell_on[4];
 extern int        active_player;
 extern int        toggle_player;
 extern int        button_flag[2];
@@ -46,9 +46,7 @@ extern uint8_t   *timezf;
  |    handle menu navigation and input events until game setup 
 \*--------------------------------------------------------------------------*/
 void chessclock_menu() {
-  // menu screen always enters from main menu
-  menu_index      = 1;
-  menu_title      = 0;
+
   // draw menu screen on enter
   menu_event      = TRUE;
 
@@ -57,11 +55,11 @@ void chessclock_menu() {
     // handle navigation
     //------------------------------
     if (menu_event) {
-      if (bell_on) {
+      if (bell_on[BELL_MENUSOUNDS]) {
         app_bell_start(CHIRP);
       }
       menu_event = FALSE;
-      menu_draw(menu_title, menu_index);
+      menu_draw();
     }
 
     //------------------------------
