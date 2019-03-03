@@ -10,7 +10,7 @@
 #define LINE1   0x80
 #define LINE2   0xC0
 
-// simple, less confusing pneumonics
+// simple, more clear pneumonics
 #define TRUE  1
 #define FALSE 0
 
@@ -43,5 +43,10 @@ void wink(uint16_t t);
 #define __USE_SPI1_ISR
 //#define __ITOA_BLANKOUT
 
+// macros
+#define basic_mcu_sleep()     (HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFE))
+#define basic_devled_on()     (HAL_GPIO_WritePin(BONUS_GPIO_Port, BONUS_Pin, GPIO_PIN_SET))
+#define basic_devled_off()    (HAL_GPIO_WritePin(BONUS_GPIO_Port, BONUS_Pin, GPIO_PIN_RESET))
+    
 
 #endif//__BASIC_H

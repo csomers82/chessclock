@@ -12,9 +12,9 @@
 #include "application.h"
 #include "chessclock.h"
 
-#define WIDTH           (16)
+#define N_MENU_CHARS    (16)
 #define N_MENU_STRS     (31)
-#define N_MENUS         (7)
+#define N_MENUS         (8)
 #define PREGAME_SCREEN  (255)
 
 /*--------------------------------------------------------------------------*\
@@ -25,26 +25,44 @@ extern int              timing_limit;
 extern uint8_t          timing_add;
 extern int              menu_index;
 extern int              menu_title;
+extern int              menu_start;
+extern int              menu_flag;
 extern int              bell_on;
-
+extern int              active_player;
+extern int              button_flag[2];
+extern int              toggle_player;
 extern enum ColorScheme color_scheme;
 
 /*--------------------------------------------------------------------------*\
  | Internal "Data Segment"
 \*--------------------------------------------------------------------------*/
 
-int  menu_lens[N_MENUS] = {
+int  menu_len[N_MENUS] = {
   3,//main menu
-  4,//select game
-  3,//color scheme
-  3,//bullet chess
-  4,//blitz chess
-  4,//rapid chess
-  4 //classic chess
+  5,//select game
+  4,//color scheme
+  0,//mute sounds 
+    // *item present so menu_title is an index*
+  4,//bullet chess
+  5,//blitz chess
+  5,//rapid chess
+  5 //classic chess
 };
 
-char menu_str[N_MENU_STRS][WIDTH] = {
-// ================,
+int  menu_parent[N_MENUS] = {
+  0,//main menu (no parent)
+  0,//select game
+  0,//color scheme
+  0,//mute sounds 
+    // *item present so menu_title is an index*
+  3,//bullet chess
+  3,//blitz chess
+  3,//rapid chess
+  3 //classic chess
+};
+
+char menu_str[N_MENU_STRS][N_MENU_CHARS+1] = {
+//"0123456789abcdef" \0
   "main menu       ", // 0
   " select game    ", // 1
   " color scheme   ", // 2
@@ -89,14 +107,17 @@ int menu_main() {
     case 2:// color scheme
       return(9);
     case 3:// mute sounds
-      menu_str[4][14] = (bell_on) ? '*': ' ';
+      menu_str[3][14] = (bell_on) ? '*': ' ';
       bell_on         = (bell_on) ?  0 :  1;
-      return(1);
+      menu_flag       = TRUE;
   }
   return(menu_index);
 }
 
 
+/*--------------------------------------------------------------------------*\
+ | menu_select_game
+\*--------------------------------------------------------------------------*/
 int menu_select_game() {
   switch ( menu_index ) {
     case 4: // bullet chess
@@ -108,11 +129,15 @@ int menu_select_game() {
     case 7: // classic chess
       return(26);
     case 8: // back
+      menu_index = 0;
       return(1);
   }
   return(menu_index);
 }
 
+/*--------------------------------------------------------------------------*\
+ | menu_color_scheme
+\*--------------------------------------------------------------------------*/
 int menu_color_scheme() {
   switch ( menu_index ) {
     case 9 : // blu vs grn
@@ -126,27 +151,35 @@ int menu_color_scheme() {
     case 9 : // blu vs grn
       menu_str[ 9][14]  = '*';
       color_scheme      = BVG; 
-      return(2);
+      menu_flag         = TRUE;
+      break;
     case 10: // yel vs mag
       menu_str[10][14]  = '*';
       color_scheme      = YVM; 
-      return(2);
+      menu_flag         = TRUE;
+      break;
     case 11: // wht, red@30s
       menu_str[11][14]  = '*';
       color_scheme      = WTR; 
-      return(2);
+      menu_flag         = TRUE;
+      break;
     case 12: // back
-      return(0);
+      menu_index = 0;
+      return(1);
   }
   return(menu_index);
 }
 
+/*--------------------------------------------------------------------------*\
+ | menu_game_format
+\*--------------------------------------------------------------------------*/
 int menu_game_format () {
   switch ( menu_index ) { 
     case 16: // back     
     case 21: // back     
     case 25: // back     
     case 30: // back     
+      menu_index = 3;
       return(4);
   }
   switch ( menu_index ) {
@@ -207,10 +240,96 @@ int menu_game_format () {
   return(PREGAME_SCREEN);
 }
 
+/*--------------------------------------------------------------------------*\
+ | menu_draw
+\*--------------------------------------------------------------------------*/
 void menu_draw(int title, int index) {
   chgline(LINE1);
   lcdprint(menu_str[title]);
   chgline(LINE2);
   lcdprint(menu_str[index]);
   return;
+}
+
+/*--------------------------------------------------------------------------*\
+ | menu_input
+\*--------------------------------------------------------------------------*/
+int menu_input() {
+  int is_event = FALSE;
+  int start    = 0;
+
+  // toggle/rotate button 
+  if (button_flag[0]) {
+    // handle input
+    button_flag[0]  = FALSE;
+    is_event        = TRUE;
+    basic_devled_on();
+    
+    // handle navigation
+    switch (menu_title) {
+      case 7: //  classic chess 
+      case 6: //  rapid chess   
+      case 5: //  blitz chess   
+      case 4: //  bullet chess  
+        start = menu_game_format(); 
+        break;
+
+      case 2: // color scheme   
+        start = menu_color_scheme(); 
+        break;
+
+      case 1: // select game    
+        start = menu_select_game(); 
+        break;
+
+      case 0: //main menu       
+      default:
+        start = menu_main(); 
+    }
+    // new title = last selected menu item
+    //menu_last  = menu_title;
+    if (! menu_flag ) {
+      menu_start = start;
+      menu_title = menu_index;
+      // new index = start of submenu
+      menu_index = menu_start;
+    }
+    menu_flag = FALSE;
+  } 
+
+  // select button
+  else if (button_flag[1]) {
+    button_flag[1]  = FALSE;
+    is_event        = TRUE;
+    basic_devled_off();
+
+    //-=-=-=-=-=-=-=-=-=-=
+    // ROTATION LOGIC
+    //-=-=-=-=-=-=-=-=-=-=
+    if (active_player == 0) {
+      // rotate forward
+      menu_index += 1;
+
+      // check roll over condition
+      if (menu_index >= menu_start + menu_len[menu_title]) {
+        menu_index = menu_start;
+      }
+    }
+    else {
+      // rotate backward 
+      menu_index -= 1;
+
+      // check roll over condition
+      if (menu_index < menu_start) {
+        menu_index = (menu_start + menu_len[menu_title] - 1);
+      }
+    }
+  }
+
+  // direction button
+  else if (toggle_player) {
+    active_player   = (1 - active_player);
+  }
+  
+  return(is_event);
 }

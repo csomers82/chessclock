@@ -32,12 +32,15 @@ extern struct BellCode bell_program1[2];
 extern struct BellCode bell_program2[2];
 extern struct BellCode bell_program3[4];
 extern struct BellCode bell_program4[9];
+extern struct BellCode bell_program5[2];
 
 /*==========================================================================*\
  | MAIN MCU RAM  
 \*==========================================================================*/
 int                 menu_index      = 1;
+int                 menu_start      = 1;
 int                 menu_title      = 0;
+int                 menu_flag       = FALSE;
 int                 menu_event      = FALSE;
 int                 tenth_flag      = FALSE;
 int                 tenths          = 0;
@@ -128,6 +131,7 @@ void app_bell_start(int program) {
     case CHIME_L: bell_pc = bell_program2; break;
     case ALARM_1: bell_pc = bell_program3; break;
     case ALARM_2: bell_pc = bell_program4; break;
+    case CHIRP  : bell_pc = bell_program5; break;
   }
 
   // read the opening instruction
@@ -218,7 +222,7 @@ void app_debounce_pb() {
   }
   
   // check pin state, inc success, quit fail
-  if (portB & BTNA_Pin) {
+  if (portB & BTNB_Pin) {
     ++pb_debounce[1];
   }
   // check end condition

@@ -31,7 +31,7 @@ struct BellCode bell_program2[2] = {
   {BELL_HALT, 0}
 };
 
-struct BellCode bell_program4[9] = {
+struct BellCode bell_program3[9] = {
   //
   // program3: alarm2
   // beep beep, beep beep
@@ -47,7 +47,7 @@ struct BellCode bell_program4[9] = {
   {BELL_HALT, 0}
 };
 
-struct BellCode bell_program3[4] = {
+struct BellCode bell_program4[4] = {
   //
   // program4: alarm1
   // beep beep, beep beep
@@ -55,5 +55,13 @@ struct BellCode bell_program3[4] = {
   {BELL_PLAY, 1},
   {BELL_REST, 1},
   {BELL_PLAY, 1},
+  {BELL_HALT, 0}
+};
+
+struct BellCode bell_program5[2] = {
+  //
+  // program1: chirp
+  //
+  {BELL_PLAY, 1},             
   {BELL_HALT, 0}
 };

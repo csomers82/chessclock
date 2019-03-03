@@ -58,7 +58,7 @@ void chessclock_menu() {
     //------------------------------
     if (menu_event) {
       if (bell_on) {
-        app_bell_start(CHIME_S);
+        app_bell_start(CHIRP);
       }
       menu_event = FALSE;
       menu_draw(menu_title, menu_index);
@@ -82,24 +82,22 @@ void chessclock_menu() {
     else if (toggle_check[1]) {
       app_debounce_ts(1);
     }
-    
     // button check
     if (button_check[0] || button_check[1]) {
       app_debounce_pb();
-      if (button_flag[0]) {
-        button_flag[0] = FALSE;
-        HAL_GPIO_WritePin(BONUS_GPIO_Port, BONUS_Pin, GPIO_PIN_SET);
-      } 
-      else if (button_flag[1]) {
-        button_flag[1] = FALSE;
-        HAL_GPIO_WritePin(BONUS_GPIO_Port, BONUS_Pin, GPIO_PIN_RESET);
-      }
+    }
+
+    // menu input handler
+    if (toggle_player || button_flag[0] || button_flag[1]) {
+      menu_event = menu_input();
     }
         
     //------------------------------
     // sleep till next event
     //------------------------------
-    app_mcu_sleep();
+    if (! menu_event) {
+      basic_mcu_sleep();
+    }
   }
   return;
 }
@@ -117,7 +115,7 @@ void chessclock_traditional() {
 void chessclock_modern() {
   while (game_active) {
     // spend less time w/ proc active
-    app_mcu_sleep();
+    basic_mcu_sleep();
 
     // handle the passing of time
     if (tenth_flag) {
@@ -209,8 +207,10 @@ void chessclock_setup(uint32_t t) {
 void chessclock_main() {
 
   // start of play 
-  chessclock_setup(MINUTES(3) + SECONDS(31));
-  app_bell_start(CHIME_S);
+  //chessclock_setup(MINUTES(3) + SECONDS(31));
+  //app_bell_start(CHIME_S);
+  chessclock_menu();
+
   while(1) {
     if (timing_modern) {
       chessclock_modern();
@@ -222,16 +222,16 @@ void chessclock_main() {
     // wait for alarm off
     app_bell_start(ALARM_2);
     while (app_bell_read()) {
-      app_mcu_sleep();
+      basic_mcu_sleep();
     }
     app_bell_start(ALARM_2);
     while (app_bell_read()) {
-      app_mcu_sleep();
+      basic_mcu_sleep();
     }
 
     // wait for new game
     while (!game_active) {
-      app_mcu_sleep();
+      basic_mcu_sleep();
     }
     
   }

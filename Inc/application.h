@@ -30,7 +30,8 @@ enum Bell_Progs {
   CHIME_S, 
   CHIME_L,
   ALARM_1,
-  ALARM_2
+  ALARM_2,
+  CHIRP
 };
 
 enum ColorScheme {
@@ -57,9 +58,6 @@ enum ColorScheme {
 #define BELL_PLAY (2)
 #define BELL_REST (1)
 #define BELL_HALT (0)
-
-// User Hardware Abstraction
-#define app_mcu_sleep()     (HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFE))
 
 //==============================================================================
 //  Functions
