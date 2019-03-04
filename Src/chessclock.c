@@ -22,8 +22,6 @@
 /*--------------------------------------------------------------------------*\
  | External Variable Definitions
 \*--------------------------------------------------------------------------*/
-extern int        menu_index;
-extern int        menu_title;
 extern int        menu_event;
 extern int        tenth_flag;
 extern int        tenths;
@@ -36,6 +34,7 @@ extern int        button_flag[2];
 extern int        count_player[2];
 extern int        timing_modern;
 extern uint8_t    timing_add;
+extern int        timing_limit;
 extern int        line;
 extern int        toggle_check[2];
 extern int        button_check[2];
@@ -97,6 +96,7 @@ void chessclock_menu() {
       basic_mcu_sleep();
     }
   }
+  chessclock_setup(timing_limit);
   return;
 }
 /*--------------------------------------------------------------------------*\
@@ -154,11 +154,11 @@ void chessclock_modern() {
       app_debounce_pb();
       if (button_flag[0]) {
         button_flag[0] = FALSE;
-        HAL_GPIO_WritePin(BONUS_GPIO_Port, BONUS_Pin, GPIO_PIN_SET);
+        basic_devled_on();
       } 
       else if (button_flag[1]) {
         button_flag[1] = FALSE;
-        HAL_GPIO_WritePin(BONUS_GPIO_Port, BONUS_Pin, GPIO_PIN_RESET);
+        basic_devled_off();
       }
     }
 
@@ -177,6 +177,7 @@ void chessclock_modern() {
     // check gameover
     if (*timezf) {
       game_active = FALSE;
+      // game over time
       game_result = GAMEOVER_TEXP + active_player;
     } 
   }// while (game_active), modern timing        
@@ -188,15 +189,22 @@ void chessclock_modern() {
  |    initializes the clocks and settings for the game 
 \*--------------------------------------------------------------------------*/
 void chessclock_setup(uint32_t t) {
-  
+  // prep lcd screen
+  send_i(LCDCLR);
+
   // initialize player two's clock
+  active_player = 0;
+  timestr_setch(0);
+  app_timestr_init(t);
+  app_timestr_print(LINE1);
+
+  active_player = 1;
   timestr_setch(1);
   app_timestr_init(t);
   app_timestr_print(LINE2);
 
+  active_player = 0;
   timestr_setch(0);
-  app_timestr_init(t);
-  app_timestr_print(LINE1);
 }
 
 /*==========================================================================*\
@@ -206,25 +214,28 @@ void chessclock_main() {
 
   // start of play 
   //chessclock_setup(MINUTES(3) + SECONDS(31));
-  //app_bell_start(CHIME_S);
   chessclock_menu();
-
+  if (bell_on[BELL_STARTFINISH]) {
+    app_bell_start(CHIME_S);
+  }
   while(1) {
-    if (timing_modern) {
-      chessclock_modern();
-    }
-    else {
-      chessclock_traditional();
-    }
+    //if (timing_modern) {
+    chessclock_modern();
+    //}
+    //else {
+    //  chessclock_traditional();
+    //}
 
     // wait for alarm off
-    app_bell_start(ALARM_2);
-    while (app_bell_read()) {
-      basic_mcu_sleep();
-    }
-    app_bell_start(ALARM_2);
-    while (app_bell_read()) {
-      basic_mcu_sleep();
+    if (bell_on[BELL_STARTFINISH]) {
+      app_bell_start(ALARM_2);
+      while (app_bell_read()) {
+        basic_mcu_sleep();
+      }
+      app_bell_start(ALARM_2);
+      while (app_bell_read()) {
+        basic_mcu_sleep();
+      }
     }
 
     // wait for new game
