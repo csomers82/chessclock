@@ -111,6 +111,8 @@ void chessclock_traditional() {
  |    time control is incremental 
 \*--------------------------------------------------------------------------*/
 void chessclock_modern() {
+  bell_on[BELL_SECALARM] = FALSE;
+  tenths = 0;
   while (game_active) {
     // spend less time w/ proc active
     basic_mcu_sleep();
@@ -128,9 +130,11 @@ void chessclock_modern() {
       }
       else {
         if (count_player[active_player] == THRESH_TENTHS) {
-          app_bell_start(ALARM_1);
+          if (bell_on[BELL_SECALARM]) {
+            app_bell_start(ALARM_1);
+          }
         }
-        if (tenths == 10) {
+        if (tenths >= 10) {
           tenths = 0;
           timestr_sub(10U);
           app_timestr_print(line);
