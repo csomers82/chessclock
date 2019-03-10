@@ -195,7 +195,9 @@ void TIM6_IRQHandler(void)
   /* USER CODE BEGIN TIM6_IRQn 1 */
   tenth_flag  = 1;
   tenths     += 1;
-  bell_count  = (bell_count) ? --bell_count : 0;
+  if(bell_count) {
+    --bell_count;
+  }
   /* USER CODE END TIM6_IRQn 1 */
 }
 

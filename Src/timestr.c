@@ -29,8 +29,24 @@ uint8_t   timefullflags[TIMESTR_CHANS] = {0};
 uint8_t * timeff;
 
 /*--------------------------------------------------------------------------*\
+ | timestr_itot: 
+ |    takes total tenths of seconds and encodes it into decimal 
+ |    (so each digit would match the clock, (mm:ss:t)
+\*--------------------------------------------------------------------------*/
+int timestr_itot(int total) {
+  int clockdisp;
+  
+  clockdisp = total % 10;// tenths do not affect min
+  total     = total / 10;// lop off tenths, total in s
+  
+  clockdisp +=   10 * (total % 60);// seconds
+  clockdisp += 1000 * (total / 60);// minutes
+
+  return(clockdisp);
+}
+/*--------------------------------------------------------------------------*\
  | timestr_ttoi: 
- |    takes a human readable set of clock numbers 
+ |    takes a human readable set of clock numbers (think decimal encoded time) 
  |    returns what those clock digits are as a total of tenth seconds
  |    (assumption is that clockdisp has 5 digits
  |        (including tenth seconds))

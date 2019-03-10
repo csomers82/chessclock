@@ -33,6 +33,13 @@
 int timestr_ttoi(int clockdisp);
 
 /*--------------------------------------------------------------------------*\
+ | timestr_itot: 
+ |    takes total tenths of seconds and encodes it into decimal 
+ |    (so each digit would match the clock, (mm:ss:t))
+\*--------------------------------------------------------------------------*/
+int timestr_itot(int total);
+
+/*--------------------------------------------------------------------------*\
  | timestr_setch: 
  |    Sets the timestr pointer to the indicated index 
  |    Channel numbers range from 0:TIMESTR_CHANS-1

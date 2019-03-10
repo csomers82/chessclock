@@ -15,9 +15,29 @@
 //  Constants
 //==============================================================================
 
-#define GAMEOVER_TEXP (0)
-#define GAMEOVER_CHKM (2)
-#define GAMEOVER_QUIT (4)
+#define GAMEOVER_TE   (0)
+#define GAMEOVER_CM   (2)
+#define GAMEOVER_RG   (4)
+#define GAMEOVER_IM   (6)
+#define GAMEOVER_SM   (8)
+#define GAMEOVER_DA   (10)
+
+//==============================================================================
+//  Types 
+//==============================================================================
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * GameRes :  allows a case statement to 
+ *            capture end of game result
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+enum GameRes {
+  GAMEOVER_WTE = GAMEOVER_TE, GAMEOVER_BTE, // ~ Time Expired ~
+  GAMEOVER_WCM = GAMEOVER_CM, GAMEOVER_BCM, // ~= Checkmate. =~
+  GAMEOVER_WRG = GAMEOVER_RG, GAMEOVER_BRG, //   Resign Game: 
+  GAMEOVER_WIM = GAMEOVER_IM, GAMEOVER_BIM, // = Illegal Move =
+  GAMEOVER_WSM = GAMEOVER_SM, GAMEOVER_BSM, //    Stalement:   
+  GAMEOVER_WDA = GAMEOVER_DA, GAMEOVER_BDA  // Offer Accepted: 
+};
 
 //==============================================================================
 //  Macros 

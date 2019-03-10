@@ -27,7 +27,10 @@ extern int        tenth_flag;
 extern int        tenths;
 extern int        game_active;
 extern int        game_result;
+extern int        game_player_w;
+extern int        game_turns;
 extern int        bell_on[4];
+extern int        bell_count;
 extern int        active_player;
 extern int        toggle_player;
 extern int        button_flag[2];
@@ -39,6 +42,8 @@ extern int        line;
 extern int        toggle_check[2];
 extern int        button_check[2];
 extern uint8_t   *timezf;
+extern int        pb_debounce[2];
+extern int        ts_debounce[2];
 
 /*--------------------------------------------------------------------------*\
  | chessclock_menu
@@ -96,7 +101,6 @@ void chessclock_menu() {
       basic_mcu_sleep();
     }
   }
-  chessclock_setup(timing_limit);
   return;
 }
 /*--------------------------------------------------------------------------*\
@@ -111,7 +115,6 @@ void chessclock_traditional() {
  |    time control is incremental 
 \*--------------------------------------------------------------------------*/
 void chessclock_modern() {
-  bell_on[BELL_SECALARM] = FALSE;
   tenths = 0;
   while (game_active) {
     // spend less time w/ proc active
@@ -176,13 +179,16 @@ void chessclock_modern() {
       line = (line == LINE1) ? LINE2 : LINE1;
       toggle_player = FALSE;
       app_bell_start(CHIME_S);
+      if (active_player == game_player_w) {
+        ++game_turns;
+      }
     }
 
     // check gameover
-    if (*timezf) {
+    if (count_player[active_player] == 0) {
       game_active = FALSE;
       // game over time
-      game_result = GAMEOVER_TEXP + active_player;
+      game_result = GAMEOVER_TE + active_player;
     } 
   }// while (game_active), modern timing        
   return;
@@ -209,6 +215,40 @@ void chessclock_setup(uint32_t t) {
 
   active_player = 0;
   timestr_setch(0);
+
+  //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  // init program values
+  //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  tenth_flag      = FALSE;
+  tenths          = 0;
+  game_result     = GAMEOVER_WTE;
+  game_turns      = 1;
+  active_player   = 0;// read the toggle switches
+  toggle_player   = 0;
+  game_player_w   = active_player;
+  button_flag[0]  = 0;
+  button_flag[1]  = 0;
+  timing_modern   = TRUE;
+  line            = LINE1;
+  ts_debounce[0]  = 0;
+  ts_debounce[1]  = 0;
+  pb_debounce[0]  = 0;
+  pb_debounce[1]  = 0;
+  toggle_check[0] = 0;
+  toggle_check[1] = 0;
+  button_check[0] = 0;
+  button_check[1] = 0;
+  bell_count      = 0;
+
+  /*// covered in app_timestr_init
+  *   count_player[0] = 0;
+  *   count_player[1] = 0;
+  */
+
+  /*// covered in menu_game_format
+  *   timing_limit    = SECONDS(600);
+  *   timing_add      = 30U;
+  */
 }
 
 /*==========================================================================*\
@@ -217,19 +257,21 @@ void chessclock_setup(uint32_t t) {
 void chessclock_main() {
 
   // start of play 
-  //chessclock_setup(MINUTES(3) + SECONDS(31));
-  chessclock_menu();
-  if (bell_on[BELL_STARTFINISH]) {
-    app_bell_start(CHIME_S);
-  }
   while(1) {
+    chessclock_menu();
+    chessclock_setup(timing_limit);
+    if (bell_on[BELL_STARTFINISH]) {
+      app_bell_start(CHIME_S);
+    }
+
     //if (timing_modern) {
     chessclock_modern();
     //}
     //else {
     //  chessclock_traditional();
     //}
-
+    menu_endgame();
+    
     // wait for alarm off
     if (bell_on[BELL_STARTFINISH]) {
       app_bell_start(ALARM_2);
@@ -243,9 +285,9 @@ void chessclock_main() {
     }
 
     // wait for new game
-    while (!game_active) {
-      basic_mcu_sleep();
-    }
+    //while (!game_active) {
+    //  basic_mcu_sleep();
+    //}
     
   }
   // never return, else error

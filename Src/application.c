@@ -18,6 +18,7 @@
 #include "application.h"
 #include "chessclock.h"
 #include "JHD162A.h"
+#include "stm32f0xx_cs.h"
 
 /*--------------------------------------------------------------------------*\
  | External Variable Definitions
@@ -43,7 +44,9 @@ int                 menu_event      = FALSE;
 int                 tenth_flag      = FALSE;
 int                 tenths          = 0;
 int                 game_active     = FALSE;
-int                 game_result     = 0;
+enum GameRes        game_result     = 0;
+int                 game_turns      = 1;
+int                 game_player_w	= 0;
 int                 active_player   = 0;
 int                 toggle_player   = 0;
 int                 button_flag[2]  = {0};

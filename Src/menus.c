@@ -13,11 +13,7 @@
 #include "chessclock.h"
 #include "menus.h"
 #include "basic.h"
-
-#define N_MENU_CHARS    (16)
-#define N_MENU_STRS     (31)
-#define N_MENUS         (8)
-#define PREGAME_SCREEN  (255)
+#include "timestr.h"
 
 /*--------------------------------------------------------------------------*\
  | External Variable Definitions
@@ -25,6 +21,7 @@
 extern int              timing_modern;
 extern int              timing_limit;
 extern uint8_t          timing_add;
+extern uint8_t        * timestr;
 extern int              scroll_index;
 extern int              menu_index;
 extern int              bell_on[4];
@@ -32,7 +29,12 @@ extern int              active_player;
 extern int              button_flag[2];
 extern int              toggle_player;
 extern enum ColorScheme color_scheme;
+extern int              count_player[2];
 extern int              game_active;
+extern int              game_turns;
+extern enum GameRes     game_result;
+extern int              game_player_w;
+extern char             itoaBuffer[6];
 
 /*--------------------------------------------------------------------------*\
  | Internal "Data Segment"
@@ -54,25 +56,29 @@ char menu_str[N_MENU_STRS][N_MENU_CHARS+1] = {
 //"0123456789abcdef" \0
   "blu vs grn   *", 
   "yel vs mag    ", 
+// 10
   "wht, 30s=red  ", 
 
 //"0123456789abcdef" \0
+#ifdef  __MENU_TEST__ 
+  " 5s + 20s     ",
+#else //__MENU_TEST__ 
   "30s +  1s     ", 
+#endif//__MENU_TEST__ 
+
   " 1m +  0s     ", 
   " 2m +  1s     ", 
 
-//"0123456789abcdef" \0
   " 3m +  0s     ", 
   " 3m +  2s     ", 
   " 5m +  0s     ", 
   " 5m +  2s     ", 
 
-//"0123456789abcdef" \0
   "10m +  0s     ", 
   "10m + 10s     ", 
+// 20
   "15m + 15s     ", 
 
-//"0123456789abcdef" \0
   "20m +  0s     ", 
   "20m + 20s     ", 
   "30m +  0s     ", 
@@ -86,14 +92,39 @@ char menu_str[N_MENU_STRS][N_MENU_CHARS+1] = {
 
 //"0123456789abcdef" \0
   "Toggle white up.",
+// 30
   "[back] [begin]",
 
+//"0123456789abcdef" \0
+  "= Time Expired =",
+  "= Time Expired =",
+  "*# Checkmate. #*",
+  "*# Checkmate. #*",
+  " White Resigns: ",
+  " Black Resigns: ",
+  "= Illegal Move =",
+  "= Illegal Move =",
+  "   Stalemate:   ",
+// 40
+  "   Stalemate:   ",
+  "Offer Accepted: ",
+
+  "** WHITE WINS **",
+  "** BLACK WINS **",
+  " GAME IS A DRAW ",
+
+  "reason_goes_here",
+  "result_goes_here",
+  "W/00:00  B/00:00",
+  "duration 00:00.0",
+  "turns taken:    "
+// 50
 };
 
 /*--------------------------------------------------------------------------*\
  | Menu Navigation Functions 
 \*--------------------------------------------------------------------------*/
-struct MenuBlock menu[9] = {
+struct MenuBlock menu[10] = {
 //{parent       , len, title         , start        , type    }
   {0            , 3-1, S_MAINMENU    , S_CHOOSEGAME , NAVIGATE},
   {B_MAINMENU   ,   4, S_CHOOSEGAME  , S_BULLETCHESS, NAVIGATE},
@@ -103,7 +134,9 @@ struct MenuBlock menu[9] = {
   {B_CHOOSEGAME ,   4, S_BLITZCHESS  , S_T03M_I00S  , GAMETYPE},
   {B_CHOOSEGAME ,   3, S_RAPIDCHESS  , S_T10M_I00S  , GAMETYPE},
   {B_CHOOSEGAME ,   4, S_CLASSICCHESS, S_T20M_I00S  , GAMETYPE},
-  {B_CHOOSEGAME ,   1, S_PREGAMEHIGH , S_PREGAMELOW , 0       }
+  {B_CHOOSEGAME ,   1, S_PREGAMEINST , S_PREGAMEBTNS, 0       },
+  {B_MAINMENU   ,   4, S_RESULT_TITLE, S_RESULT_STR , 0       }
+
 };
 
 /*--------------------------------------------------------------------------*\
@@ -134,6 +167,11 @@ int menu_navigate(int mi, int si) {
         case 3: menu_index = B_CLASSICCHESS; break; 
       }
       break;
+
+    default:
+      // catch for gametype=0, do nothing
+      // safe because: return logic at higher level
+      return(FALSE);
   }
   scroll_index = 0;
   return(TRUE);
@@ -193,8 +231,13 @@ int menu_game_format (int mi, int si) {
   si += menu[mi].start; 
   switch (si) {
     case S_T30S_I01S:
+      #ifdef __MENU_TEST__
+      timing_limit = SECONDS(5);
+      timing_add   = 20;
+      #else
       timing_limit = SECONDS(30);
       timing_add   = 1;
+      #endif
       break;      
     case S_T01M_I00S:
       timing_limit = MINUTES(1);
@@ -265,14 +308,16 @@ void menu_draw() {
   print_c(' ');
 
   chgline(LINE2);
-  print_c(' ');
-  print_c(' ');
+  if (menu_index != B_GAMEOVER) {
+    print_c(' ');
+    print_c(' ');
+  }
   if (menu_index == B_MAINMENU) 
     lcdprint(menu_str[m.start + scroll_index]);
   else if (scroll_index < m.len) 
     lcdprint(menu_str[m.start + scroll_index]);
   else
-    lcdprint("back -^       ");
+    lcdprint(BACK_STR);
   return;
 }
 
@@ -357,6 +402,7 @@ void menu_select() {
       case SOUND: 
         nav = menu_sound(scroll_index); break;
       case NAVIGATE: 
+        // (also path for gametype is 0 => no result)
         nav = menu_navigate(menu_index, scroll_index); break;
     }
   }
@@ -391,5 +437,109 @@ void menu_rotate(int *si, int max) {
       *si = max; 
     }
   }
+  return;
+}
+/*--------------------------------------------------------------------------*\
+ | menu_endgame
+ |   sets the appropriate strings for the "endgame menu"
+\*--------------------------------------------------------------------------*/
+void menu_endgame() {
+  int c, s;//char_index, string_index
+  
+  // set menu_index to B_GAMEOVER
+  menu_index = B_GAMEOVER;
+  
+  // into S_RESULT_TITLE, copy matching from menu_str
+  // S_ENDGAME_TE is start of endgame reason strings
+  s = S_ENDGAME_TE + game_result;
+  for (c = 0; c < N_MENU_CHARS; ++c) {
+    menu_str[S_RESULT_TITLE][c] = menu_str[s][c];
+  }
+  // into S_RESULT_STR, copy matching from menu_str
+  switch (game_result) {
+    case GAMEOVER_WTE: 
+    case GAMEOVER_WCM: 
+    case GAMEOVER_WRG: 
+    case GAMEOVER_WIM: 
+      s = S_RESULT_BINS; break;
+    case GAMEOVER_BTE: 
+    case GAMEOVER_BCM: 
+    case GAMEOVER_BRG: 
+    case GAMEOVER_BIM: 
+      s = S_RESULT_WINS; break;
+    default:
+      s = S_RESULT_DRAW;
+  }
+  for (c = 0; c < N_MENU_CHARS; ++c) {
+    menu_str[S_RESULT_STR][c] = menu_str[s][c];
+  }
+  
+  // into S_RESULT_TIMES, write end timestr vals
+  //    "0123456789abcdef" \0
+  //    "W/00:00  B/00:00",
+  timestr_setch(game_player_w);
+  if (count_player[game_player_w] > THRESH_TENTHS) {
+    menu_str[S_RESULT_TIMES][2] = timestr[4];
+    menu_str[S_RESULT_TIMES][3] = timestr[3];
+    menu_str[S_RESULT_TIMES][4] = ':';
+    menu_str[S_RESULT_TIMES][5] = timestr[2];
+    menu_str[S_RESULT_TIMES][6] = timestr[1];
+  } else {
+    menu_str[S_RESULT_TIMES][2] = timestr[2];
+    menu_str[S_RESULT_TIMES][3] = timestr[1];
+    menu_str[S_RESULT_TIMES][4] = '.';
+    menu_str[S_RESULT_TIMES][5] = timestr[0];
+    menu_str[S_RESULT_TIMES][6] = ' ';
+  }
+  //    "0123456789abcdef" \0
+  //    "W/00:00  B/00:00",
+  timestr_setch(1 - game_player_w);
+  if (count_player[1 - game_player_w] > THRESH_TENTHS) {
+    menu_str[S_RESULT_TIMES][11] = timestr[4];
+    menu_str[S_RESULT_TIMES][12] = timestr[3];
+    menu_str[S_RESULT_TIMES][13] = ':';
+    menu_str[S_RESULT_TIMES][14] = timestr[2];
+    menu_str[S_RESULT_TIMES][15] = timestr[1];
+  } else {
+    menu_str[S_RESULT_TIMES][11] = timestr[2];
+    menu_str[S_RESULT_TIMES][12] = timestr[1];
+    menu_str[S_RESULT_TIMES][13] = '.';
+    menu_str[S_RESULT_TIMES][14] = timestr[0];
+    menu_str[S_RESULT_TIMES][15] = ' ';
+  }
+  
+  // into S_RESULT_DUR    write 2*time_limit-playertimes
+  //    "0123456789abcdef" \0
+  //    "duration 00:00.0",
+  int d; // total duration in tenthsenconds
+  d = 2 * timestr_ttoi(timing_limit);
+  d -= count_player[0]; 
+  d -= count_player[1]; 
+  itoa_intoBuffer(timestr_itot(d));
+  menu_str[S_RESULT_DUR][9]  = itoaBuffer[0];
+  menu_str[S_RESULT_DUR][10] = itoaBuffer[1];
+  menu_str[S_RESULT_DUR][12] = itoaBuffer[2];
+  menu_str[S_RESULT_DUR][13] = itoaBuffer[3];
+  menu_str[S_RESULT_DUR][15] = itoaBuffer[4];
+
+  
+  // into S_RESULT_TURNS  write game_turncnt
+  //    "0123456789abcdef" \0
+  //    "turns taken:    "
+  itoa_intoBuffer(game_turns);
+  if (game_turns > 99) {
+    menu_str[S_RESULT_TURNS][13] = itoaBuffer[2];
+    menu_str[S_RESULT_TURNS][14] = itoaBuffer[1];
+    menu_str[S_RESULT_TURNS][15] = itoaBuffer[0];
+  } else if (game_turns > 9) {
+    menu_str[S_RESULT_TURNS][13] = itoaBuffer[1];
+    menu_str[S_RESULT_TURNS][14] = itoaBuffer[0];
+    menu_str[S_RESULT_TURNS][15] = ' ';
+  } else {
+    menu_str[S_RESULT_TURNS][13] = itoaBuffer[0];
+    menu_str[S_RESULT_TURNS][14] = ' ';
+    menu_str[S_RESULT_TURNS][15] = ' ';
+  }
+  
   return;
 }

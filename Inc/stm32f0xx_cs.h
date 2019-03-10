@@ -16,7 +16,7 @@
 #include "stm32f0xx_hal.h"
 #include "system_stm32f0xx.h"    /* STM32F0xx System Header */
 #include "stm32f030x8.h"
-#include "stm32f0xx_cs.h"
+
 
 uint32_t stm32f0_read_gpio (
     GPIO_TypeDef   *GPIOx
